@@ -1,0 +1,1241 @@
+<!DOCTYPE html>
+<html lang="pt-BR" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ENEM 2027 | UFES Ciências Econômicas - Plataforma Completa de Estudos</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        ufes: {
+                            50: '#f0f9ff',
+                            100: '#e0f2fe',
+                            500: '#0284c7',
+                            700: '#0369a1',
+                            900: '#0c4a6e',
+                        },
+                        economy: {
+                            500: '#10b981',
+                            600: '#059669',
+                            700: '#047857',
+                        }
+                    },
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                    }
+                }
+            }
+        }
+    </script>
+    <!-- FontAwesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Chart.js for graphics -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        body { font-family: 'Inter', sans-serif; }
+        ::-webkit-scrollbar { width: 8px; height: 8px; }
+        ::-webkit-scrollbar-track { background: #1e293b; }
+        ::-webkit-scrollbar-thumb { background: #334155; border-radius: 4px; }
+        ::-webkit-scrollbar-thumb:hover { background: #475569; }
+        .tab-btn.active {
+            border-bottom: 3px solid #10b981;
+            color: #10b981;
+            font-weight: 700;
+        }
+    </style>
+</head>
+<body class="bg-slate-950 text-slate-100 min-h-screen flex flex-col antialiased selection:bg-emerald-500 selection:text-white">
+
+    <!-- TOPBAR / HEADER -->
+    <header class="bg-slate-900 border-b border-slate-800 sticky top-0 z-50 backdrop-blur-md bg-slate-900/90">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex items-center justify-between h-16">
+                <!-- Logo & Goal -->
+                <div class="flex items-center gap-3">
+                    <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-emerald-500 to-sky-600 flex items-center justify-center text-white font-black text-xl shadow-lg shadow-emerald-500/20">
+                        <i class="fa-solid fa-chart-line"></i>
+                    </div>
+                    <div>
+                        <div class="flex items-center gap-2">
+                            <h1 class="font-bold text-lg text-white leading-tight">ENEM 2027 <span class="text-emerald-400">UFES Economia</span></h1>
+                            <span class="bg-emerald-500/20 text-emerald-300 text-xs px-2 py-0.5 rounded-full font-medium border border-emerald-500/30 hidden sm:inline-block">Meta: ~735 pts</span>
+                        </div>
+                        <p class="text-xs text-slate-400">Plano Focado • Pesos UFES: Mat(4), Hum(4), Red(4), Ling(2), Nat(1)</p>
+                    </div>
+                </div>
+
+                <!-- Right Tools & Stats -->
+                <div class="flex items-center gap-3">
+                    <!-- Countdown Badge -->
+                    <div class="hidden md:flex items-center gap-2 bg-slate-800/80 px-3 py-1.5 rounded-lg border border-slate-700 text-xs">
+                        <i class="fa-regular fa-clock text-emerald-400"></i>
+                        <span id="countdownText" class="font-semibold text-slate-200">Calculando...</span>
+                    </div>
+
+                    <!-- Backup / Restore -->
+                    <button onclick="exportData()" title="Exportar Backup JSON" class="p-2 text-slate-400 hover:text-white bg-slate-800 hover:bg-slate-700 rounded-lg transition border border-slate-700">
+                        <i class="fa-solid fa-download"></i>
+                    </button>
+                    <label title="Importar Backup JSON" class="p-2 text-slate-400 hover:text-white bg-slate-800 hover:bg-slate-700 rounded-lg transition border border-slate-700 cursor-pointer">
+                        <i class="fa-solid fa-upload"></i>
+                        <input type="file" id="importFileInput" onchange="importData(event)" class="hidden" accept=".json">
+                    </label>
+
+                    <!-- Theme/Reset -->
+                    <button onclick="confirmReset()" title="Resetar Dados" class="p-2 text-rose-400 hover:text-rose-300 bg-rose-950/40 hover:bg-rose-900/60 rounded-lg transition border border-rose-800/50">
+                        <i class="fa-solid fa-rotate-left"></i>
+                    </button>
+                </div>
+            </div>
+
+            <!-- NAVIGATION TABS -->
+            <nav class="flex space-x-6 overflow-x-auto no-scrollbar border-t border-slate-800/60 pt-1 text-sm">
+                <button onclick="switchTab('dashboard')" id="tab-dashboard" class="tab-btn active py-3 px-1 text-slate-400 hover:text-slate-200 whitespace-nowrap transition flex items-center gap-2">
+                    <i class="fa-solid fa-gauge-high"></i> Dashboard Estratégico
+                </button>
+                <button onclick="switchTab('cronograma')" id="tab-cronograma" class="tab-btn py-3 px-1 text-slate-400 hover:text-slate-200 whitespace-nowrap transition flex items-center gap-2">
+                    <i class="fa-regular fa-calendar-check"></i> Cronograma Semanal (Seg-Dom)
+                </button>
+                <button onclick="switchTab('trilha')" id="tab-trilha" class="tab-btn py-3 px-1 text-slate-400 hover:text-slate-200 whitespace-nowrap transition flex items-center gap-2">
+                    <i class="fa-solid fa-book-open"></i> Trilha de Conteúdos (Jan-Nov)
+                </button>
+                <button onclick="switchTab('simulados')" id="tab-simulados" class="tab-btn py-3 px-1 text-slate-400 hover:text-slate-200 whitespace-nowrap transition flex items-center gap-2">
+                    <i class="fa-solid fa-pen-ruler"></i> Central de Simulados (44)
+                </button>
+                <button onclick="switchTab('guia')" id="tab-guia" class="tab-btn py-3 px-1 text-slate-400 hover:text-slate-200 whitespace-nowrap transition flex items-center gap-2">
+                    <i class="fa-solid fa-lightbulb"></i> Bancos de Questões & Dicas
+                </button>
+            </nav>
+        </div>
+    </header>
+
+    <!-- MAIN CONTAINER -->
+    <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 flex-1 w-full">
+
+        <!-- TAB 1: DASHBOARD ESTRATÉGICO -->
+        <section id="section-dashboard" class="space-y-6">
+            <!-- Strategic Alert Banner -->
+            <div class="bg-gradient-to-r from-slate-900 via-slate-800 to-emerald-950/40 p-5 rounded-2xl border border-emerald-500/30 shadow-xl flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
+                <div class="space-y-1">
+                    <div class="flex items-center gap-2">
+                        <span class="bg-emerald-500 text-slate-950 text-xs font-bold px-2 py-0.5 rounded uppercase tracking-wider">Estratégia UFES</span>
+                        <h2 class="text-xl font-extrabold text-white">Foco Total em Ciências Econômicas</h2>
+                    </div>
+                    <p class="text-slate-300 text-sm max-w-3xl">
+                        Na UFES, <strong class="text-emerald-400">Matemática (Peso 4)</strong>, <strong class="text-emerald-400">Ciências Humanas (Peso 4)</strong> e <strong class="text-emerald-400">Redação (Peso 4)</strong> correspondem a <span class="text-white font-bold">80% da sua nota final</span>! Linguagens tem peso 2 e Natureza peso 1. Seu plano foi desenhado para maximizar pontos onde mais importa.
+                    </p>
+                </div>
+                <div class="bg-slate-900/90 border border-slate-700/80 p-3 rounded-xl flex gap-4 text-center text-xs shrink-0">
+                    <div>
+                        <span class="block text-slate-400">Corte Ref.</span>
+                        <span class="text-base font-bold text-emerald-400">734,65</span>
+                    </div>
+                    <div class="border-l border-slate-800 pl-4">
+                        <span class="block text-slate-400">Sua Média Est.</span>
+                        <span id="dashEstScore" class="text-base font-bold text-sky-400">0,00</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- KPI Cards Grid -->
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                <!-- Card 1: Aulas / Progresso -->
+                <div class="bg-slate-900 border border-slate-800 p-5 rounded-2xl space-y-2 relative overflow-hidden">
+                    <div class="flex justify-between items-center text-slate-400 text-sm">
+                        <span>Progresso do Edital</span>
+                        <i class="fa-solid fa-graduation-cap text-sky-400"></i>
+                    </div>
+                    <div class="flex items-baseline gap-2">
+                        <span id="dashProgressPct" class="text-3xl font-extrabold text-white">0%</span>
+                        <span id="dashProgressCount" class="text-xs text-slate-400">0 / 0 tópicos</span>
+                    </div>
+                    <div class="w-full bg-slate-800 h-2 rounded-full overflow-hidden">
+                        <div id="dashProgressBar" class="bg-sky-500 h-full w-0 transition-all duration-500"></div>
+                    </div>
+                </div>
+
+                <!-- Card 2: Questões Resolvidas -->
+                <div class="bg-slate-900 border border-slate-800 p-5 rounded-2xl space-y-2">
+                    <div class="flex justify-between items-center text-slate-400 text-sm">
+                        <span>Questões Resolvidas</span>
+                        <i class="fa-solid fa-list-check text-emerald-400"></i>
+                    </div>
+                    <div class="flex items-baseline gap-2">
+                        <span id="dashQuestionsSolved" class="text-3xl font-extrabold text-white">0</span>
+                        <span class="text-xs text-emerald-400 font-semibold" id="dashAccuracy">0% acertos</span>
+                    </div>
+                    <p class="text-xs text-slate-400">Meta: 15.000+ questões até o ENEM</p>
+                </div>
+
+                <!-- Card 3: Simulados Realizados -->
+                <div class="bg-slate-900 border border-slate-800 p-5 rounded-2xl space-y-2">
+                    <div class="flex justify-between items-center text-slate-400 text-sm">
+                        <span>Simulados Realizados</span>
+                        <i class="fa-solid fa-clock-rotate-left text-amber-400"></i>
+                    </div>
+                    <div class="flex items-baseline gap-2">
+                        <span id="dashSimCount" class="text-3xl font-extrabold text-white">0 / 44</span>
+                        <span class="text-xs text-slate-400">1 por semana</span>
+                    </div>
+                    <p class="text-xs text-slate-400" id="dashLastSimInfo">Nenhum simulado registrado</p>
+                </div>
+
+                <!-- Card 4: Média em Redação -->
+                <div class="bg-slate-900 border border-slate-800 p-5 rounded-2xl space-y-2">
+                    <div class="flex justify-between items-center text-slate-400 text-sm">
+                        <span>Média em Redação</span>
+                        <i class="fa-solid fa-pen-nib text-purple-400"></i>
+                    </div>
+                    <div class="flex items-baseline gap-2">
+                        <span id="dashRedacaoAvg" class="text-3xl font-extrabold text-purple-400">0</span>
+                        <span class="text-xs text-slate-400">/ 1000 pts</span>
+                    </div>
+                    <p class="text-xs text-slate-400">Canal: Luma e Ponto</p>
+                </div>
+            </div>
+
+            <!-- UFES Score Calculator & Channels Map -->
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                <!-- Calculator -->
+                <div class="lg:col-span-2 bg-slate-900 border border-slate-800 p-6 rounded-2xl space-y-4">
+                    <div class="flex items-center justify-between border-b border-slate-800 pb-3">
+                        <h3 class="font-bold text-lg text-white flex items-center gap-2">
+                            <i class="fa-solid fa-calculator text-emerald-400"></i> Simulador de Nota Ponderada UFES (Economia)
+                        </h3>
+                        <span class="text-xs text-slate-400">Preencha suas notas estimadas por área</span>
+                    </div>
+
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        <div>
+                            <label class="block text-xs font-semibold text-slate-300 mb-1">Matemática (PESO 4)</label>
+                            <input type="number" id="calcMat" min="0" max="1000" value="780" oninput="calculateUFESScore()" class="w-full bg-slate-800 border border-slate-700 rounded-lg px-3 py-2 text-white focus:outline-none focus:border-emerald-500">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-semibold text-slate-300 mb-1">Ciências Humanas (PESO 4)</label>
+                            <input type="number" id="calcHum" min="0" max="1000" value="720" oninput="calculateUFESScore()" class="w-full bg-slate-800 border border-slate-700 rounded-lg px-3 py-2 text-white focus:outline-none focus:border-emerald-500">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-semibold text-slate-300 mb-1">Redação (PESO 4)</label>
+                            <input type="number" id="calcRed" min="0" max="1000" value="920" oninput="calculateUFESScore()" class="w-full bg-slate-800 border border-slate-700 rounded-lg px-3 py-2 text-white focus:outline-none focus:border-emerald-500">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-semibold text-slate-300 mb-1">Linguagens (PESO 2)</label>
+                            <input type="number" id="calcLing" min="0" max="1000" value="660" oninput="calculateUFESScore()" class="w-full bg-slate-800 border border-slate-700 rounded-lg px-3 py-2 text-white focus:outline-none focus:border-emerald-500">
+                        </div>
+                        <div class="sm:col-span-2">
+                            <label class="block text-xs font-semibold text-slate-300 mb-1">Ciências da Natureza (PESO 1)</label>
+                            <input type="number" id="calcNat" min="0" max="1000" value="620" oninput="calculateUFESScore()" class="w-full bg-slate-800 border border-slate-700 rounded-lg px-3 py-2 text-white focus:outline-none focus:border-emerald-500">
+                        </div>
+                    </div>
+
+                    <div class="bg-slate-950 p-4 rounded-xl border border-slate-800 flex flex-col sm:flex-row items-center justify-between gap-4">
+                        <div>
+                            <span class="text-xs text-slate-400 block">Sua Média Ponderada UFES:</span>
+                            <span id="simulatedResultScore" class="text-2xl font-black text-emerald-400">748.00</span>
+                        </div>
+                        <div id="simulatedStatusBadge" class="bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 px-4 py-2 rounded-xl text-sm font-semibold">
+                            <i class="fa-solid fa-circle-check"></i> Acima da Nota de Corte (~734.65)
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Channels Configuration Cards -->
+                <div class="bg-slate-900 border border-slate-800 p-6 rounded-2xl space-y-4">
+                    <h3 class="font-bold text-lg text-white border-b border-slate-800 pb-3 flex items-center gap-2">
+                        <i class="fa-brands fa-youtube text-red-500"></i> Seus Canais Configurados
+                    </h3>
+                    <div class="space-y-3 text-xs">
+                        <div class="p-2.5 bg-slate-800/80 rounded-xl flex items-center justify-between border border-slate-700/50">
+                            <div>
+                                <span class="font-bold text-sky-400 block">Mat, Fis, Qui, Bio, Ling</span>
+                                <span class="text-slate-300">Plataforma Assaad</span>
+                            </div>
+                            <span class="text-slate-400">Pedro Assaad</span>
+                        </div>
+                        <div class="p-2.5 bg-slate-800/80 rounded-xl flex items-center justify-between border border-slate-700/50">
+                            <div>
+                                <span class="font-bold text-amber-400 block">Atualidades, Filo, Socio</span>
+                                <span class="text-slate-300">Canal Parabólica</span>
+                            </div>
+                            <span class="text-slate-400">Pedro Rennó</span>
+                        </div>
+                        <div class="p-2.5 bg-slate-800/80 rounded-xl flex items-center justify-between border border-slate-700/50">
+                            <div>
+                                <span class="font-bold text-rose-400 block">História</span>
+                                <span class="text-slate-300">Débora Aladim</span>
+                            </div>
+                            <span class="text-slate-400">Vídeos Diretos</span>
+                        </div>
+                        <div class="p-2.5 bg-slate-800/80 rounded-xl flex items-center justify-between border border-slate-700/50">
+                            <div>
+                                <span class="font-bold text-purple-400 block">Redação</span>
+                                <span class="text-slate-300">Luma e Ponto</span>
+                            </div>
+                            <span class="text-slate-400">Método Luma</span>
+                        </div>
+                        <div class="p-2.5 bg-slate-800/80 rounded-xl flex items-center justify-between border border-slate-700/50">
+                            <div>
+                                <span class="font-bold text-emerald-400 block">Geografia</span>
+                                <span class="text-slate-300">Thais Formagio</span>
+                            </div>
+                            <span class="text-slate-400">Geografia ENEM</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- TAB 2: CRONOGRAMA SEMANAL (SEG-DOM) -->
+        <section id="section-cronograma" class="hidden space-y-6">
+            <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 bg-slate-900 p-5 rounded-2xl border border-slate-800">
+                <div>
+                    <h2 class="text-xl font-bold text-white flex items-center gap-2">
+                        <i class="fa-solid fa-calendar-days text-emerald-400"></i> Rotina Semanal de Estudos
+                    </h2>
+                    <p class="text-sm text-slate-400">
+                        <strong class="text-white">Seg a Sex:</strong> Até 4h/dia • <strong class="text-white">Sáb e Dom:</strong> Até 10h/dia (Intensivo + Redação + Simulado Oficial)
+                    </p>
+                </div>
+                <button onclick="resetWeeklyCheckboxes()" class="text-xs bg-slate-800 hover:bg-slate-700 text-slate-300 px-3 py-2 rounded-lg border border-slate-700 transition">
+                    <i class="fa-solid fa-arrows-rotate mr-1"></i> Resetar Checkbox da Semana
+                </button>
+            </div>
+
+            <!-- Days Grid -->
+            <div id="weeklyScheduleGrid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                <!-- Populated via JS -->
+            </div>
+        </section>
+
+        <!-- TAB 3: TRILHA DE CONTEÚDOS (JAN - NOV / 44 SEMANAS) -->
+        <section id="section-trilha" class="hidden space-y-6">
+            <!-- Filters Header -->
+            <div class="bg-slate-900 p-5 rounded-2xl border border-slate-800 space-y-4">
+                <div class="flex flex-col md:flex-row md:items-center justify-between gap-4">
+                    <div>
+                        <h2 class="text-xl font-bold text-white flex items-center gap-2">
+                            <i class="fa-solid fa-layer-group text-sky-400"></i> Trilha de Conteúdos por Matéria & Mês
+                        </h2>
+                        <p class="text-xs text-slate-400">Planejamento cirúrgico de Janeiro a Novembro com links diretos de busca nos canais no YouTube.</p>
+                    </div>
+
+                    <!-- Search Input -->
+                    <div class="relative w-full md:w-64">
+                        <i class="fa-solid fa-magnifying-glass absolute left-3 top-3 text-slate-500 text-xs"></i>
+                        <input type="text" id="subjectSearch" oninput="renderSyllabus()" placeholder="Buscar assunto ou tópico..." class="w-full bg-slate-800 border border-slate-700 rounded-xl pl-8 pr-3 py-2 text-xs text-white focus:outline-none focus:border-emerald-500">
+                    </div>
+                </div>
+
+                <!-- Month Selector -->
+                <div class="flex items-center gap-2 overflow-x-auto pb-2 border-b border-slate-800 text-xs" id="monthFilterContainer">
+                    <!-- Populated via JS -->
+                </div>
+
+                <!-- Subject Filters -->
+                <div class="flex flex-wrap gap-2 text-xs" id="subjectFilterContainer">
+                    <!-- Populated via JS -->
+                </div>
+            </div>
+
+            <!-- Topics List Container -->
+            <div id="topicsContainer" class="space-y-4">
+                <!-- Topics populated dynamically -->
+            </div>
+        </section>
+
+        <!-- TAB 4: CENTRAL DE SIMULADOS (44 SIMULADOS) -->
+        <section id="section-simulados" class="hidden space-y-6">
+            <div class="bg-slate-900 p-5 rounded-2xl border border-slate-800 flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
+                <div>
+                    <h2 class="text-xl font-bold text-white flex items-center gap-2">
+                        <i class="fa-solid fa-file-pen text-amber-400"></i> Central de Simulados & Evolução TRI
+                    </h2>
+                    <p class="text-xs text-slate-400">44 Simulados programados (1 por semana de Jan a Nov). Registre seus acertos e acompanhe sua curva de desempenho.</p>
+                </div>
+                <div class="flex items-center gap-3">
+                    <span class="text-xs bg-slate-800 text-slate-300 px-3 py-1.5 rounded-lg border border-slate-700">
+                        <strong id="completedSimsBadge" class="text-emerald-400">0</strong> / 44 concluídos
+                    </span>
+                </div>
+            </div>
+
+            <!-- Chart Container -->
+            <div class="bg-slate-900 p-5 rounded-2xl border border-slate-800 space-y-3">
+                <h3 class="font-bold text-sm text-slate-300 flex items-center gap-2">
+                    <i class="fa-solid fa-chart-line text-emerald-400"></i> Gráfico de Evolução na Nota Ponderada UFES
+                </h3>
+                <div class="h-64 w-full">
+                    <canvas id="simulationsChart"></canvas>
+                </div>
+            </div>
+
+            <!-- Simulados Grid -->
+            <div id="simuladosListGrid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                <!-- Cards generated via JS -->
+            </div>
+        </section>
+
+        <!-- TAB 5: GUIA DE BANCOS DE QUESTÕES & DICAS -->
+        <section id="section-guia" class="hidden space-y-6">
+            <div class="bg-slate-900 p-6 rounded-2xl border border-slate-800 space-y-2">
+                <h2 class="text-xl font-bold text-white flex items-center gap-2">
+                    <i class="fa-solid fa-graduation-cap text-emerald-400"></i> Como Estudar de Graça e Passar na UFES
+                </h2>
+                <p class="text-sm text-slate-300">
+                    Você não precisa de cursinho pago de R$ 2.000/mês para tirar 750+ no ENEM. A aprovação em Economia depende de alta consistência em resolução de questões, revisão de erros e vídeos estratégicos.
+                </p>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <!-- Free Question Platforms -->
+                <div class="bg-slate-900 border border-slate-800 p-6 rounded-2xl space-y-4">
+                    <h3 class="font-bold text-white text-base border-b border-slate-800 pb-3 flex items-center gap-2">
+                        <i class="fa-solid fa-link text-sky-400"></i> Plataformas Gratuitas de Questões & Provas
+                    </h3>
+                    <ul class="space-y-3 text-xs">
+                        <li class="bg-slate-800/80 p-3 rounded-xl border border-slate-700/60 flex items-start justify-between">
+                            <div>
+                                <strong class="text-white block text-sm">Portal INEP (Provas Anteriores)</strong>
+                                <span class="text-slate-400">Baixe todas as provas oficiais e gabaritos de 2010 a 2026 gratuitamente.</span>
+                            </div>
+                            <a href="https://www.gov.br/inep/pt-br/areas-de-atuacao/avaliacao-e-exames-da-educacao-basica/enem/provas-e-gabaritos" target="_blank" class="bg-sky-500/20 text-sky-300 hover:bg-sky-500/40 px-3 py-1.5 rounded-lg border border-sky-500/40 font-semibold transition shrink-0 ml-2">Acessar</a>
+                        </li>
+                        <li class="bg-slate-800/80 p-3 rounded-xl border border-slate-700/60 flex items-start justify-between">
+                            <div>
+                                <strong class="text-white block text-sm">Repertório ENEM</strong>
+                                <span class="text-slate-400">Banco de questões 100% gratuito filtrado por disciplina e assunto.</span>
+                            </div>
+                            <a href="https://www.repertorioenem.com.br" target="_blank" class="bg-emerald-500/20 text-emerald-300 hover:bg-emerald-500/40 px-3 py-1.5 rounded-lg border border-emerald-500/40 font-semibold transition shrink-0 ml-2">Acessar</a>
+                        </li>
+                        <li class="bg-slate-800/80 p-3 rounded-xl border border-slate-700/60 flex items-start justify-between">
+                            <div>
+                                <strong class="text-white block text-sm">Projeto Medicina (PDFs por Assunto)</strong>
+                                <span class="text-slate-400">Listas gratuitas de exercícios em PDF divididas por tópicos de todas as matérias.</span>
+                            </div>
+                            <a href="https://projetomedicina.com.br" target="_blank" class="bg-purple-500/20 text-purple-300 hover:bg-purple-500/40 px-3 py-1.5 rounded-lg border border-purple-500/40 font-semibold transition shrink-0 ml-2">Acessar</a>
+                        </li>
+                        <li class="bg-slate-800/80 p-3 rounded-xl border border-slate-700/60 flex items-start justify-between">
+                            <div>
+                                <strong class="text-white block text-sm">Estuda.com (Plano Gratuito)</strong>
+                                <span class="text-slate-400">Resolver bateria diária de questões e ver estatísticas de rendimento.</span>
+                            </div>
+                            <a href="https://enem.estuda.com" target="_blank" class="bg-amber-500/20 text-amber-300 hover:bg-amber-500/40 px-3 py-1.5 rounded-lg border border-amber-500/40 font-semibold transition shrink-0 ml-2">Acessar</a>
+                        </li>
+                    </ul>
+                </div>
+
+                <!-- Study Techniques for High TRI -->
+                <div class="bg-slate-900 border border-slate-800 p-6 rounded-2xl space-y-4">
+                    <h3 class="font-bold text-white text-base border-b border-slate-800 pb-3 flex items-center gap-2">
+                        <i class="fa-solid fa-brain text-purple-400"></i> Metodologia do Caderno de Erros
+                    </h3>
+                    <div class="space-y-3 text-xs text-slate-300">
+                        <div class="p-3 bg-slate-800/60 rounded-xl border border-slate-700/40">
+                            <strong class="text-emerald-400 block mb-1 font-bold">1. Classificação de Erro</strong>
+                            Para cada questão errada no simulado, classifique em: <br>
+                            • <em>Lacuna Teórica</em> (não sabia a fórmula ou conceito)<br>
+                            • <em>Erro de Interpretação</em> (distração com o texto)<br>
+                            • <em>Falta de Tempo</em> (questão muito longa)
+                        </div>
+                        <div class="p-3 bg-slate-800/60 rounded-xl border border-slate-700/40">
+                            <strong class="text-sky-400 block mb-1 font-bold">2. Regra dos Pesos UFES</strong>
+                            Não perca 3 horas tentando decorar detalhes excessivos de Botânica ou Física Moderna (Natureza = Peso 1). Garanta que seu tempo vá 80% para Matemática (Peso 4), História/Geografia/Filo/Socio (Peso 4) e Redação (Peso 4).
+                        </div>
+                        <div class="p-3 bg-slate-800/60 rounded-xl border border-slate-700/40">
+                            <strong class="text-amber-400 block mb-1 font-bold">3. Método de Redação Luma e Ponto</strong>
+                            Faça 1 redação por semana no sábado. Foque em repertórios curinga, estrutura de 4 parágrafos e detalhamento completo da Proposta de Intervenção (Agente, Ação, Meio/Modo, Efeito e Detalhamento).
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+    </main>
+
+    <!-- MODAL REGISTRO DE SIMULADO -->
+    <div id="simuladoModal" class="fixed inset-0 bg-slate-950/80 backdrop-blur-sm z-50 flex items-center justify-center hidden p-4">
+        <div class="bg-slate-900 border border-slate-800 w-full max-w-lg rounded-2xl p-6 space-y-5 shadow-2xl relative">
+            <button onclick="closeSimuladoModal()" class="absolute top-4 right-4 text-slate-400 hover:text-white text-lg">
+                <i class="fa-solid fa-xmark"></i>
+            </button>
+
+            <div>
+                <h3 id="modalSimTitle" class="text-lg font-bold text-white">Registrar Simulado</h3>
+                <p class="text-xs text-slate-400">Insira a quantidade de acertos (/45) e a nota da redação (/1000).</p>
+            </div>
+
+            <input type="hidden" id="modalSimId">
+
+            <div class="grid grid-cols-2 gap-4 text-xs">
+                <div>
+                    <label class="block font-semibold text-slate-300 mb-1">Linguagens (Acertos / 45)</label>
+                    <input type="number" id="modalLing" min="0" max="45" class="w-full bg-slate-800 border border-slate-700 rounded-lg p-2.5 text-white focus:outline-none focus:border-emerald-500">
+                </div>
+                <div>
+                    <label class="block font-semibold text-slate-300 mb-1">Ciências Humanas (Acertos / 45)</label>
+                    <input type="number" id="modalHum" min="0" max="45" class="w-full bg-slate-800 border border-slate-700 rounded-lg p-2.5 text-white focus:outline-none focus:border-emerald-500">
+                </div>
+                <div>
+                    <label class="block font-semibold text-slate-300 mb-1">Ciências da Natureza (Acertos / 45)</label>
+                    <input type="number" id="modalNat" min="0" max="45" class="w-full bg-slate-800 border border-slate-700 rounded-lg p-2.5 text-white focus:outline-none focus:border-emerald-500">
+                </div>
+                <div>
+                    <label class="block font-semibold text-slate-300 mb-1">Matemática (Acertos / 45)</label>
+                    <input type="number" id="modalMat" min="0" max="45" class="w-full bg-slate-800 border border-slate-700 rounded-lg p-2.5 text-white focus:outline-none focus:border-emerald-500">
+                </div>
+                <div class="col-span-2">
+                    <label class="block font-semibold text-slate-300 mb-1">Redação (Nota de 0 a 1000)</label>
+                    <input type="number" id="modalRed" min="0" max="1000" step="20" class="w-full bg-slate-800 border border-slate-700 rounded-lg p-2.5 text-white focus:outline-none focus:border-emerald-500">
+                </div>
+            </div>
+
+            <div class="flex justify-end gap-3 pt-2">
+                <button onclick="closeSimuladoModal()" class="px-4 py-2 bg-slate-800 text-slate-300 hover:bg-slate-700 rounded-xl text-xs font-semibold">Cancelar</button>
+                <button onclick="saveSimuladoData()" class="px-4 py-2 bg-emerald-500 text-slate-950 hover:bg-emerald-400 font-bold rounded-xl text-xs">Salvar Resultado</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- FOOTER -->
+    <footer class="bg-slate-900 border-t border-slate-800 py-4 text-center text-xs text-slate-500">
+        <p>Plataforma de Estudos ENEM 2027 • Foco total em Ciências Econômicas na UFES • 100% Gratuito</p>
+    </footer>
+
+    <!-- LOGIC & DATA SCRIPT -->
+    <script>
+        // CONFIG & APP STATE
+        const STORAGE_KEY = 'enem2027_ufes_economia_app_v1';
+
+        // INITIAL SYLLABUS DATA (44 Semanas / 11 Meses)
+        const INITIAL_SYLLABUS = [
+            // JANEIRO
+            { id: 't1', month: 'Janeiro', subject: 'Matemática', topic: 'Razão, Proporção e Regra de Três', channel: 'Plataforma Assaad', weight: 4, targetQ: 40, watched: false, doneQ: 0, correctQ: 0 },
+            { id: 't2', month: 'Janeiro', subject: 'História', topic: 'Brasil Colônia: Economia Açucareira e Mineração', channel: 'Canal Débora Aladim', weight: 4, targetQ: 35, watched: false, doneQ: 0, correctQ: 0 },
+            { id: 't3', month: 'Janeiro', subject: 'Geografia', topic: 'Cartografia, Fuso Horário e Escalas', channel: 'Canal Thais Formagio', weight: 4, targetQ: 30, watched: false, doneQ: 0, correctQ: 0 },
+            { id: 't4', month: 'Janeiro', subject: 'Filosofia', topic: 'Filosofia Pró-Socrática e Mito vs Razão', channel: 'Canal Parabólica', weight: 4, targetQ: 25, watched: false, doneQ: 0, correctQ: 0 },
+            { id: 't5', month: 'Janeiro', subject: 'Sociologia', topic: 'Surgimento da Sociologia e Émile Durkheim', channel: 'Canal Parabólica', weight: 4, targetQ: 25, watched: false, doneQ: 0, correctQ: 0 },
+            { id: 't6', month: 'Janeiro', subject: 'Redação', topic: 'Estrutura da Redação ENEM e Competência 1', channel: 'Canal Luma e Ponto', weight: 4, targetQ: 5, watched: false, doneQ: 0, correctQ: 0 },
+            { id: 't7', month: 'Janeiro', subject: 'Linguagens', topic: 'Funções da Linguagem e Comunicação', channel: 'Plataforma Assaad', weight: 2, targetQ: 30, watched: false, doneQ: 0, correctQ: 0 },
+            { id: 't8', month: 'Janeiro', subject: 'Física', topic: 'Cinemática: Movimento Uniforme e Mu', channel: 'Plataforma Assaad', weight: 1, targetQ: 20, watched: false, doneQ: 0, correctQ: 0 },
+            { id: 't9', month: 'Janeiro', subject: 'Química', topic: 'Estados da Matéria e Separacão de Misturas', channel: 'Plataforma Assaad', weight: 1, targetQ: 20, watched: false, doneQ: 0, correctQ: 0 },
+            { id: 't10', month: 'Janeiro', subject: 'Biologia', topic: 'Ecologia: Cadeias Alimentares e Relações Ecológicas', channel: 'Plataforma Assaad', weight: 1, targetQ: 25, watched: false, doneQ: 0, correctQ: 0 },
+
+            // FEVEREIRO
+            { id: 't11', month: 'Fevereiro', subject: 'Matemática', topic: 'Porcentagem, Juros Simples e Compostos (Foco Economia)', channel: 'Plataforma Assaad', weight: 4, targetQ: 45, watched: false, doneQ: 0, correctQ: 0 },
+            { id: 't12', month: 'Fevereiro', subject: 'História', topic: 'Brasil Império: Primeiro e Segundo Reinado', channel: 'Canal Débora Aladim', weight: 4, targetQ: 35, watched: false, doneQ: 0, correctQ: 0 },
+            { id: 't13', month: 'Fevereiro', subject: 'Geografia', topic: 'Geomorfologia, Relevo e Solos do Brasil', channel: 'Canal Thais Formagio', weight: 4, targetQ: 30, watched: false, doneQ: 0, correctQ: 0 },
+            { id: 't14', month: 'Fevereiro', subject: 'Filosofia', topic: 'Sócrates, Platão e o Mito da Caverna', channel: 'Canal Parabólica', weight: 4, targetQ: 30, watched: false, doneQ: 0, correctQ: 0 },
+            { id: 't15', month: 'Fevereiro', subject: 'Sociologia', topic: 'Max Weber: Ação Social e Ética Protestante', channel: 'Canal Parabólica', weight: 4, targetQ: 30, watched: false, doneQ: 0, correctQ: 0 },
+            { id: 't16', month: 'Fevereiro', subject: 'Redação', topic: 'Projeto de Texto e Competência 2 (Repertório)', channel: 'Canal Luma e Ponto', weight: 4, targetQ: 5, watched: false, doneQ: 0, correctQ: 0 },
+            { id: 't17', month: 'Fevereiro', subject: 'Atualidades', topic: 'Geopolítica Global Contemporânea e Blocos Econômicos', channel: 'Canal Parabólica', weight: 4, targetQ: 25, watched: false, doneQ: 0, correctQ: 0 },
+            { id: 't18', month: 'Fevereiro', subject: 'Física', topic: 'Leis de Newton e Aplicações Práticas', channel: 'Plataforma Assaad', weight: 1, targetQ: 20, watched: false, doneQ: 0, correctQ: 0 },
+
+            // MARÇO
+            { id: 't19', month: 'Março', subject: 'Matemática', topic: 'Estatística: Média, Moda, Mediana e Desvio Padrão', channel: 'Plataforma Assaad', weight: 4, targetQ: 50, watched: false, doneQ: 0, correctQ: 0 },
+            { id: 't20', month: 'Março', subject: 'História', topic: 'República Velha e Revolução de 1930', channel: 'Canal Débora Aladim', weight: 4, targetQ: 35, watched: false, doneQ: 0, correctQ: 0 },
+            { id: 't21', month: 'Março', subject: 'Geografia', topic: 'Climatologia e Domínios Morfoclimáticos', channel: 'Canal Thais Formagio', weight: 4, targetQ: 30, watched: false, doneQ: 0, correctQ: 0 },
+            { id: 't22', month: 'Março', subject: 'Filosofia', topic: 'Aristóteles: Ética a Nicômaco e Política', channel: 'Canal Parabólica', weight: 4, targetQ: 30, watched: false, doneQ: 0, correctQ: 0 },
+            { id: 't23', month: 'Março', subject: 'Sociologia', topic: 'Karl Marx: Luta de Classes e Mais-Valia', channel: 'Canal Parabólica', weight: 4, targetQ: 35, watched: false, doneQ: 0, correctQ: 0 },
+            { id: 't24', month: 'Março', subject: 'Redação', topic: 'Competência 3: Argumentação e Coerência', channel: 'Canal Luma e Ponto', weight: 4, targetQ: 5, watched: false, doneQ: 0, correctQ: 0 },
+
+            // ABRIL
+            { id: 't25', month: 'Abril', subject: 'Matemática', topic: 'Funções do 1º e 2º Grau e Gráficos', channel: 'Plataforma Assaad', weight: 4, targetQ: 45, watched: false, doneQ: 0, correctQ: 0 },
+            { id: 't26', month: 'Abril', subject: 'História', topic: 'Era Vargas (1930-1945) e Trabalhismo', channel: 'Canal Débora Aladim', weight: 4, targetQ: 40, watched: false, doneQ: 0, correctQ: 0 },
+            { id: 't27', month: 'Abril', subject: 'Geografia', topic: 'Urbanização Brasileira e Problemas Urbanos', channel: 'Canal Thais Formagio', weight: 4, targetQ: 35, watched: false, doneQ: 0, correctQ: 0 },
+            { id: 't28', month: 'Abril', subject: 'Filosofia', topic: 'Filosofia Medieval: Agostinho e Tomás de Aquino', channel: 'Canal Parabólica', weight: 4, targetQ: 25, watched: false, doneQ: 0, correctQ: 0 },
+            { id: 't29', month: 'Abril', subject: 'Química', topic: 'Estequiometria Básica e Cálculos Químicos', channel: 'Plataforma Assaad', weight: 1, targetQ: 30, watched: false, doneQ: 0, correctQ: 0 },
+
+            // MAIO
+            { id: 't30', month: 'Maio', subject: 'Matemática', topic: 'Geometria Plana: Áreas, Perímetros e Triângulos', channel: 'Plataforma Assaad', weight: 4, targetQ: 50, watched: false, doneQ: 0, correctQ: 0 },
+            { id: 't31', month: 'Maio', subject: 'História', topic: 'Ditadura Militar no Brasil (1964-1985)', channel: 'Canal Débora Aladim', weight: 4, targetQ: 40, watched: false, doneQ: 0, correctQ: 0 },
+            { id: 't32', month: 'Maio', subject: 'Geografia', topic: 'Geografia Agrária e Agronegócio no Brasil', channel: 'Canal Thais Formagio', weight: 4, targetQ: 35, watched: false, doneQ: 0, correctQ: 0 },
+            { id: 't33', month: 'Maio', subject: 'Filosofia', topic: 'Racionalismo (Descartes) vs Empirismo (Locke/Hume)', channel: 'Canal Parabólica', weight: 4, targetQ: 30, watched: false, doneQ: 0, correctQ: 0 },
+            { id: 't34', month: 'Maio', subject: 'Redação', topic: 'Competência 4: Coesão Textual e Conectivos', channel: 'Canal Luma e Ponto', weight: 4, targetQ: 5, watched: false, doneQ: 0, correctQ: 0 },
+
+            // JUNHO
+            { id: 't35', month: 'Junho', subject: 'Matemática', topic: 'Geometria Espacial: Prismas, Cilindros e Esferas', channel: 'Plataforma Assaad', weight: 4, targetQ: 45, watched: false, doneQ: 0, correctQ: 0 },
+            { id: 't36', month: 'Junho', subject: 'História', topic: 'Revolução Industrial e Capitalismo', channel: 'Canal Débora Aladim', weight: 4, targetQ: 35, watched: false, doneQ: 0, correctQ: 0 },
+            { id: 't37', month: 'Junho', subject: 'Geografia', topic: 'Globalização, Redes e Comunicação', channel: 'Canal Thais Formagio', weight: 4, targetQ: 35, watched: false, doneQ: 0, correctQ: 0 },
+            { id: 't38', month: 'Junho', subject: 'Filosofia', topic: 'Iluminismo e Contratualistas (Hobbes, Locke, Rousseau)', channel: 'Canal Parabólica', weight: 4, targetQ: 35, watched: false, doneQ: 0, correctQ: 0 },
+            { id: 't39', month: 'Junho', subject: 'Sociologia', topic: 'Mundo do Trabalho: Fordismo, Toyotismo e Uberização', channel: 'Canal Parabólica', weight: 4, targetQ: 35, watched: false, doneQ: 0, correctQ: 0 },
+
+            // JULHO
+            { id: 't40', month: 'Julho', subject: 'Matemática', topic: 'Análise Combinatória e Arranjos/Combinações', channel: 'Plataforma Assaad', weight: 4, targetQ: 45, watched: false, doneQ: 0, correctQ: 0 },
+            { id: 't41', month: 'Julho', subject: 'História', topic: 'Primeira e Segunda Guerra Mundial', channel: 'Canal Débora Aladim', weight: 4, targetQ: 40, watched: false, doneQ: 0, correctQ: 0 },
+            { id: 't42', month: 'Julho', subject: 'Geografia', topic: 'Demografia e Transição Demográfica', channel: 'Canal Thais Formagio', weight: 4, targetQ: 30, watched: false, doneQ: 0, correctQ: 0 },
+            { id: 't43', month: 'Julho', subject: 'Redação', topic: 'Competência 5: Proposta de Intervenção Detalhada', channel: 'Canal Luma e Ponto', weight: 4, targetQ: 5, watched: false, doneQ: 0, correctQ: 0 },
+
+            // AGOSTO
+            { id: 't44', month: 'Agosto', subject: 'Matemática', topic: 'Probabilidade Simples e Condicional', channel: 'Plataforma Assaad', weight: 4, targetQ: 45, watched: false, doneQ: 0, correctQ: 0 },
+            { id: 't45', month: 'Agosto', subject: 'História', topic: 'Guerra Fria e Nova Ordem Mundial', channel: 'Canal Débora Aladim', weight: 4, targetQ: 35, watched: false, doneQ: 0, correctQ: 0 },
+            { id: 't46', month: 'Agosto', subject: 'Filosofia', topic: 'Escola de Frankfurt e Indústria Cultural', channel: 'Canal Parabólica', weight: 4, targetQ: 30, watched: false, doneQ: 0, correctQ: 0 },
+            { id: 't47', month: 'Agosto', subject: 'Física', topic: 'Eletrodinâmica: Circuitos, Potência e Consumo Eletrico', channel: 'Plataforma Assaad', weight: 1, targetQ: 35, watched: false, doneQ: 0, correctQ: 0 },
+
+            // SETEMBRO
+            { id: 't48', month: 'Setembro', subject: 'Matemática', topic: 'Escala, Matrizes e Interpretação de Gráficos', channel: 'Plataforma Assaad', weight: 4, targetQ: 40, watched: false, doneQ: 0, correctQ: 0 },
+            { id: 't49', month: 'Setembro', subject: 'Geografia', topic: 'Fontes de Energia e Impactos Ambientais', channel: 'Canal Thais Formagio', weight: 4, targetQ: 35, watched: false, doneQ: 0, correctQ: 0 },
+            { id: 't50', month: 'Setembro', subject: 'Linguagens', topic: 'Variação Linguística e Gêneros Textuais', channel: 'Plataforma Assaad', weight: 2, targetQ: 35, watched: false, doneQ: 0, correctQ: 0 },
+            { id: 't51', month: 'Setembro', subject: 'Química', topic: 'Química Orgânica: Funções Oxigenadas e Nitrogenadas', channel: 'Plataforma Assaad', weight: 1, targetQ: 30, watched: false, doneQ: 0, correctQ: 0 },
+
+            // OUTUBRO
+            { id: 't52', month: 'Outubro', subject: 'Matemática', topic: 'Revisão Intensiva: Questões Recorrentes ENEM', channel: 'Plataforma Assaad', weight: 4, targetQ: 60, watched: false, doneQ: 0, correctQ: 0 },
+            { id: 't53', month: 'Outubro', subject: 'História', topic: 'Brasil Redemocratizado e Constituição de 1988', channel: 'Canal Débora Aladim', weight: 4, targetQ: 35, watched: false, doneQ: 0, correctQ: 0 },
+            { id: 't54', month: 'Outubro', subject: 'Atualidades', topic: 'Crises Econômicas Contemporâneas e Sustentabilidade', channel: 'Canal Parabólica', weight: 4, targetQ: 30, watched: false, doneQ: 0, correctQ: 0 },
+            { id: 't55', month: 'Outubro', subject: 'Redação', topic: 'Treino de Temas Inéditos e Tempo Limite', channel: 'Canal Luma e Ponto', weight: 4, targetQ: 10, watched: false, doneQ: 0, correctQ: 0 },
+
+            // NOVEMBRO
+            { id: 't56', month: 'Novembro', subject: 'Matemática', topic: 'Reta Final: Simulados e Estratégia de Prova', channel: 'Plataforma Assaad', weight: 4, targetQ: 60, watched: false, doneQ: 0, correctQ: 0 },
+            { id: 't57', month: 'Novembro', subject: 'Redação', topic: 'Revisão de Esqueletos e Gramática Prática', channel: 'Canal Luma e Ponto', weight: 4, targetQ: 5, watched: false, doneQ: 0, correctQ: 0 },
+            { id: 't58', month: 'Novembro', subject: 'Linguagens', topic: 'Interpretação e Literatura Contemporânea', channel: 'Plataforma Assaad', weight: 2, targetQ: 40, watched: false, doneQ: 0, correctQ: 0 }
+        ];
+
+        // INITIAL SIMULATIONS DATA (44 SIMULADOS JAN - NOV)
+        const INITIAL_SIMULADOS = Array.from({ length: 44 }, (_, i) => {
+            const num = i + 1;
+            const monthNames = ['Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho', 'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro'];
+            const monthIndex = Math.floor(i / 4);
+            const monthName = monthNames[Math.min(monthIndex, 10)];
+            let title = `Simulado #${num < 10 ? '0' + num : num} - ${monthName}`;
+            if (num === 1) title += ' (Diagnóstico Início do Ano)';
+            else if (num % 4 === 0) title += ' (SAS / Bernoulli Modelo ENEM)';
+            else title += ' (Provas Anteriores PPL/Regular)';
+
+            return {
+                id: `sim_${num}`,
+                num: num,
+                month: monthName,
+                title: title,
+                ling: null,
+                hum: null,
+                nat: null,
+                mat: null,
+                red: null,
+                date: null
+            };
+        });
+
+        // INITIAL WEEKLY SCHEDULE
+        const WEEKLY_SCHEDULE = [
+            {
+                day: 'Segunda-feira',
+                badge: '4 Horas',
+                type: 'weekday',
+                tasks: [
+                    { time: '13:00 - 14:30', subject: 'Matemática (Peso 4)', channel: 'Plataforma Assaad', desc: 'Assistir aula + Anotações estratégicas', questTarget: 15, key: 'seg_task1' },
+                    { time: '14:30 - 16:00', subject: 'História (Peso 4)', channel: 'Canal Débora Aladim', desc: 'Assistir aula + Mapa Mental', questTarget: 10, key: 'seg_task2' },
+                    { time: '16:00 - 17:00', subject: 'Linguagens (Peso 2)', channel: 'Plataforma Assaad', desc: 'Interpretação de Texto e Exercícios', questTarget: 10, key: 'seg_task3' }
+                ]
+            },
+            {
+                day: 'Terça-feira',
+                badge: '4 Horas',
+                type: 'weekday',
+                tasks: [
+                    { time: '13:00 - 14:30', subject: 'Geografia (Peso 4)', channel: 'Canal Thais Formagio', desc: 'Teoria + Análise de Gráficos/Mapas', questTarget: 12, key: 'ter_task1' },
+                    { time: '14:30 - 16:00', subject: 'Filosofia / Sociologia (Peso 4)', channel: 'Canal Parabólica', desc: 'Conceitos Teóricos e Autores', questTarget: 12, key: 'ter_task2' },
+                    { time: '16:00 - 17:00', subject: 'Química (Peso 1)', channel: 'Plataforma Assaad', desc: 'Estudo focado nos assuntos recorrentes', questTarget: 8, key: 'ter_task3' }
+                ]
+            },
+            {
+                day: 'Quarta-feira',
+                badge: '4 Horas',
+                type: 'weekday',
+                tasks: [
+                    { time: '13:00 - 14:30', subject: 'Matemática (Peso 4)', channel: 'Plataforma Assaad', desc: 'Resolução Ativa de Exercícios', questTarget: 20, key: 'qua_task1' },
+                    { time: '14:30 - 15:30', subject: 'Redação (Peso 4)', channel: 'Canal Luma e Ponto', desc: 'Estudo de Repertório e Modelos', questTarget: 2, key: 'qua_task2' },
+                    { time: '15:30 - 17:00', subject: 'Atualidades & Física (Peso 4 / 1)', channel: 'Parabólica / Assaad', desc: 'Noticiário + Física Básica', questTarget: 10, key: 'qua_task3' }
+                ]
+            },
+            {
+                day: 'Quinta-feira',
+                badge: '4 Horas',
+                type: 'weekday',
+                tasks: [
+                    { time: '13:00 - 14:30', subject: 'História (Peso 4)', channel: 'Canal Débora Aladim', desc: 'Exercícios ENEM e Linha do Tempo', questTarget: 15, key: 'qui_task1' },
+                    { time: '14:30 - 16:00', subject: 'Geografia (Peso 4)', channel: 'Canal Thais Formagio', desc: 'Bateria de Questões Geopolítica/Agrária', questTarget: 15, key: 'qui_task2' },
+                    { time: '16:00 - 17:00', subject: 'Biologia (Peso 1)', channel: 'Plataforma Assaad', desc: 'Ecologia e Citologia essencial', questTarget: 8, key: 'qui_task3' }
+                ]
+            },
+            {
+                day: 'Sexta-feira',
+                badge: '4 Horas',
+                type: 'weekday',
+                tasks: [
+                    { time: '13:00 - 14:30', subject: 'Matemática (Peso 4)', channel: 'Plataforma Assaad', desc: 'Revisão de Erros da Semana', questTarget: 15, key: 'sex_task1' },
+                    { time: '14:30 - 16:00', subject: 'Filosofia / Sociologia (Peso 4)', channel: 'Canal Parabólica', desc: 'Resolução de Questões ENEM', questTarget: 12, key: 'sex_task2' },
+                    { time: '16:00 - 17:00', subject: 'Linguagens & Revisão', channel: 'Plataforma Assaad', desc: 'Revisão Espaçada Flashcards', questTarget: 10, key: 'sex_task3' }
+                ]
+            },
+            {
+                day: 'Sábado (Intensivo)',
+                badge: 'Até 10 Horas',
+                type: 'weekend',
+                tasks: [
+                    { time: '08:00 - 11:30', subject: 'Aprofundamento Humanas (Peso 4)', channel: 'Parabólica / Aladim / Thais', desc: 'Super Bateria de Questões Humanas', questTarget: 35, key: 'sab_task1' },
+                    { time: '13:00 - 15:00', subject: 'PRODUÇÃO DE REDAÇÃO INÉDITA', channel: 'Canal Luma e Ponto', desc: 'Escrever redação completa no tempo limite', questTarget: 1, key: 'sab_task2' },
+                    { time: '15:15 - 18:30', subject: 'Aprofundamento Matemática (Peso 4)', channel: 'Plataforma Assaad', desc: 'Listas Difíceis + Questões TRI Alta', questTarget: 35, key: 'sab_task3' },
+                    { time: '18:30 - 19:30', subject: 'Organização e Caderno de Erros', channel: 'Autônomo', desc: 'Registrar erros e planejar o simulado', questTarget: 0, key: 'sab_task4' }
+                ]
+            },
+            {
+                day: 'Domingo (Dia do Simulado)',
+                badge: 'Até 10 Horas',
+                type: 'weekend',
+                tasks: [
+                    { time: '13:00 - 18:00', subject: 'DIA OFICIAL DE SIMULADO ENEM', channel: 'Provas Anteriores / SAS', desc: 'Realização de Prova Completa 1º ou 2º Dia', questTarget: 90, key: 'dom_task1' },
+                    { time: '18:30 - 21:00', subject: 'Correção TRI & Caderno de Erros', channel: 'Autônomo', desc: 'Registrar resultados na plataforma', questTarget: 0, key: 'dom_task2' }
+                ]
+            }
+        ];
+
+        // GLOBAL APP STATE CONTAINER
+        let appData = {
+            syllabus: INITIAL_SYLLABUS,
+            simulados: INITIAL_SIMULADOS,
+            weeklyChecklist: {},
+            activeMonth: 'Todos',
+            activeSubject: 'Todos'
+        };
+
+        let chartInstance = null;
+
+        // LOAD DATA FROM LOCALSTORAGE
+        function loadState() {
+            const stored = localStorage.getItem(STORAGE_KEY);
+            if (stored) {
+                try {
+                    const parsed = JSON.parse(stored);
+                    appData.syllabus = parsed.syllabus || INITIAL_SYLLABUS;
+                    appData.simulados = parsed.simulados || INITIAL_SIMULADOS;
+                    appData.weeklyChecklist = parsed.weeklyChecklist || {};
+                } catch (e) {
+                    console.error('Erro ao ler localStorage', e);
+                }
+            }
+        }
+
+        // SAVE DATA TO LOCALSTORAGE
+        function saveState() {
+            localStorage.setItem(STORAGE_KEY, JSON.stringify(appData));
+            updateDashboardMetrics();
+        }
+
+        // INITIALIZE APPLICATION
+        window.addEventListener('DOMContentLoaded', () => {
+            loadState();
+            startCountdown();
+            calculateUFESScore();
+            renderWeeklySchedule();
+            renderMonthFilters();
+            renderSubjectFilters();
+            renderSyllabus();
+            renderSimuladosGrid();
+            updateDashboardMetrics();
+            initChart();
+        });
+
+        // COUNTDOWN TIMER TO ENEM 2027 (Approx. Nov 7, 2027)
+        function startCountdown() {
+            const enemDate = new Date('2027-11-07T13:00:00');
+            function update() {
+                const now = new Date();
+                const diff = enemDate - now;
+                if (diff <= 0) {
+                    document.getElementById('countdownText').textContent = 'Chegou o Grande Dia!';
+                    return;
+                }
+                const days = Math.floor(diff / (1000 * 60 * 60 * 24));
+                const hours = Math.floor((diff / (1000 * 60 * 60)) % 24);
+                document.getElementById('countdownText').textContent = `${days} dias e ${hours}h para o ENEM 2027`;
+            }
+            update();
+            setInterval(update, 60000);
+        }
+
+        // TAB SWITCHING LOGIC
+        function switchTab(tabId) {
+            document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
+            document.getElementById(`tab-${tabId}`).classList.add('active');
+
+            ['dashboard', 'cronograma', 'trilha', 'simulados', 'guia'].forEach(section => {
+                document.getElementById(`section-${section}`).classList.add('hidden');
+            });
+            document.getElementById(`section-${tabId}`).classList.remove('hidden');
+
+            if (tabId === 'simulados') {
+                setTimeout(updateChart, 100);
+            }
+        }
+
+        // DASHBOARD METRICS CALCULATION
+        function updateDashboardMetrics() {
+            // Syllabus progress
+            const totalTopics = appData.syllabus.length;
+            const completedTopics = appData.syllabus.filter(t => t.watched).length;
+            const pct = totalTopics ? Math.round((completedTopics / totalTopics) * 100) : 0;
+
+            document.getElementById('dashProgressPct').textContent = `${pct}%`;
+            document.getElementById('dashProgressCount').textContent = `${completedTopics} / ${totalTopics} tópicos`;
+            document.getElementById('dashProgressBar').style.width = `${pct}%`;
+
+            // Questions
+            let totalDone = 0;
+            let totalCorrect = 0;
+            appData.syllabus.forEach(t => {
+                totalDone += Number(t.doneQ || 0);
+                totalCorrect += Number(t.correctQ || 0);
+            });
+            const acc = totalDone > 0 ? Math.round((totalCorrect / totalDone) * 100) : 0;
+            document.getElementById('dashQuestionsSolved').textContent = totalDone.toLocaleString();
+            document.getElementById('dashAccuracy').textContent = `${acc}% acertos`;
+
+            // Simulados
+            const completedSims = appData.simulados.filter(s => s.mat !== null);
+            document.getElementById('dashSimCount').textContent = `${completedSims.length} / 44`;
+            document.getElementById('completedSimsBadge').textContent = completedSims.length;
+
+            if (completedSims.length > 0) {
+                const last = completedSims[completedSims.length - 1];
+                const lastScore = calculateUFESWeightedScore(last.mat, last.hum, last.red, last.ling, last.nat);
+                document.getElementById('dashLastSimInfo').textContent = `Último (${last.month}): ~${lastScore.toFixed(1)} pts`;
+                document.getElementById('dashEstScore').textContent = lastScore.toFixed(1);
+
+                // Redacao Avg
+                const redAvg = Math.round(completedSims.reduce((acc, curr) => acc + (curr.red || 0), 0) / completedSims.length);
+                document.getElementById('dashRedacaoAvg').textContent = redAvg;
+            } else {
+                document.getElementById('dashLastSimInfo').textContent = 'Nenhum simulado registrado';
+                document.getElementById('dashEstScore').textContent = '0.0';
+                document.getElementById('dashRedacaoAvg').textContent = '0';
+            }
+        }
+
+        // SIMULATOR FOR UFES SCORE
+        function calculateUFESWeightedScore(matScore, humScore, redScore, lingScore, natScore) {
+            // Weights for UFES Economia: Mat 4, Hum 4, Red 4, Ling 2, Nat 1 (Total = 15)
+            const score = ((matScore * 4) + (humScore * 4) + (redScore * 4) + (lingScore * 2) + (natScore * 1)) / 15;
+            return score;
+        }
+
+        function calculateUFESScore() {
+            const mat = parseFloat(document.getElementById('calcMat').value) || 0;
+            const hum = parseFloat(document.getElementById('calcHum').value) || 0;
+            const red = parseFloat(document.getElementById('calcRed').value) || 0;
+            const ling = parseFloat(document.getElementById('calcLing').value) || 0;
+            const nat = parseFloat(document.getElementById('calcNat').value) || 0;
+
+            const res = calculateUFESWeightedScore(mat, hum, red, ling, nat);
+            document.getElementById('simulatedResultScore').textContent = res.toFixed(2);
+
+            const badge = document.getElementById('simulatedStatusBadge');
+            if (res >= 734.65) {
+                badge.className = 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 px-4 py-2 rounded-xl text-sm font-semibold';
+                badge.innerHTML = `<i class="fa-solid fa-circle-check"></i> Acima da Nota de Corte Ref. (~734,65)`;
+            } else {
+                badge.className = 'bg-amber-500/20 text-amber-300 border border-amber-500/40 px-4 py-2 rounded-xl text-sm font-semibold';
+                badge.innerHTML = `<i class="fa-solid fa-triangle-exclamation"></i> Faltam ${(734.65 - res).toFixed(2)} pontos para o corte`;
+            }
+        }
+
+        // RENDER CRONOGRAMA SEMANAL
+        function renderWeeklySchedule() {
+            const grid = document.getElementById('weeklyScheduleGrid');
+            grid.innerHTML = '';
+
+            WEEKLY_SCHEDULE.forEach(dayObj => {
+                const dayCard = document.createElement('div');
+                dayCard.className = `bg-slate-900 border rounded-2xl p-5 space-y-4 flex flex-col justify-between ${
+                    dayObj.type === 'weekend' ? 'border-emerald-500/40 bg-gradient-to-b from-slate-900 via-slate-900 to-emerald-950/20' : 'border-slate-800'
+                }`;
+
+                let tasksHtml = '';
+                dayObj.tasks.forEach(task => {
+                    const isChecked = appData.weeklyChecklist[task.key] ? 'checked' : '';
+                    tasksHtml += `
+                        <div class="bg-slate-800/70 p-3 rounded-xl border border-slate-700/50 space-y-1">
+                            <div class="flex items-start justify-between gap-2">
+                                <label class="flex items-start gap-2 cursor-pointer">
+                                    <input type="checkbox" onchange="toggleWeeklyTask('${task.key}')" ${isChecked} class="mt-1 rounded bg-slate-900 border-slate-700 text-emerald-500 focus:ring-emerald-500">
+                                    <div>
+                                        <span class="font-bold text-xs text-white block ${isChecked ? 'line-through text-slate-500' : ''}">${task.subject}</span>
+                                        <span class="text-[11px] text-slate-400 block">${task.desc}</span>
+                                    </div>
+                                </label>
+                            </div>
+                            <div class="flex items-center justify-between text-[10px] text-slate-400 pt-1 border-t border-slate-700/40">
+                                <span><i class="fa-regular fa-clock text-sky-400"></i> ${task.time}</span>
+                                <span class="text-amber-400 font-semibold"><i class="fa-brands fa-youtube text-red-500"></i> ${task.channel}</span>
+                            </div>
+                        </div>
+                    `;
+                });
+
+                dayCard.innerHTML = `
+                    <div class="space-y-3">
+                        <div class="flex items-center justify-between border-b border-slate-800 pb-3">
+                            <h3 class="font-bold text-white text-base">${dayObj.day}</h3>
+                            <span class="text-xs px-2.5 py-1 rounded-full font-bold ${
+                                dayObj.type === 'weekend' ? 'bg-emerald-500 text-slate-950' : 'bg-slate-800 text-slate-300 border border-slate-700'
+                            }">${dayObj.badge}</span>
+                        </div>
+                        <div class="space-y-2">
+                            ${tasksHtml}
+                        </div>
+                    </div>
+                `;
+                grid.appendChild(dayCard);
+            });
+        }
+
+        function toggleWeeklyTask(key) {
+            appData.weeklyChecklist[key] = !appData.weeklyChecklist[key];
+            saveState();
+            renderWeeklySchedule();
+        }
+
+        function resetWeeklyCheckboxes() {
+            if (confirm('Deseja resetar os checkboxes de tarefas concluídas da semana?')) {
+                appData.weeklyChecklist = {};
+                saveState();
+                renderWeeklySchedule();
+            }
+        }
+
+        // RENDER MONTH & SUBJECT FILTERS FOR SYLLABUS
+        const MONTHS = ['Todos', 'Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho', 'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro'];
+        const SUBJECTS = ['Todos', 'Matemática', 'História', 'Geografia', 'Filosofia', 'Sociologia', 'Atualidades', 'Redação', 'Linguagens', 'Física', 'Química', 'Biologia'];
+
+        function renderMonthFilters() {
+            const container = document.getElementById('monthFilterContainer');
+            container.innerHTML = MONTHS.map(m => `
+                <button onclick="setMonthFilter('${m}')" class="px-3 py-1 rounded-lg font-medium transition whitespace-nowrap ${
+                    appData.activeMonth === m ? 'bg-emerald-500 text-slate-950 font-bold' : 'bg-slate-800 text-slate-300 hover:bg-slate-700'
+                }">${m}</button>
+            `).join('');
+        }
+
+        function renderSubjectFilters() {
+            const container = document.getElementById('subjectFilterContainer');
+            container.innerHTML = SUBJECTS.map(s => `
+                <button onclick="setSubjectFilter('${s}')" class="px-2.5 py-1 rounded-lg text-xs font-medium transition whitespace-nowrap ${
+                    appData.activeSubject === s ? 'bg-sky-500 text-white font-bold' : 'bg-slate-800 text-slate-400 hover:text-white'
+                }">${s}</button>
+            `).join('');
+        }
+
+        function setMonthFilter(month) {
+            appData.activeMonth = month;
+            renderMonthFilters();
+            renderSyllabus();
+        }
+
+        function setSubjectFilter(subject) {
+            appData.activeSubject = subject;
+            renderSubjectFilters();
+            renderSyllabus();
+        }
+
+        // RENDER SYLLABUS TOPICS
+        function renderSyllabus() {
+            const container = document.getElementById('topicsContainer');
+            const search = document.getElementById('subjectSearch').value.toLowerCase();
+
+            const filtered = appData.syllabus.filter(item => {
+                const matchMonth = appData.activeMonth === 'Todos' || item.month === appData.activeMonth;
+                const matchSubject = appData.activeSubject === 'Todos' || item.subject === appData.activeSubject;
+                const matchSearch = item.topic.toLowerCase().includes(search) || item.subject.toLowerCase().includes(search);
+                return matchMonth && matchSubject && matchSearch;
+            });
+
+            if (filtered.length === 0) {
+                container.innerHTML = `
+                    <div class="bg-slate-900 border border-slate-800 p-8 rounded-2xl text-center text-slate-400 text-sm">
+                        Nenhum assunto encontrado para estes filtros.
+                    </div>
+                `;
+                return;
+            }
+
+            container.innerHTML = filtered.map(item => {
+                const ytSearchUrl = `https://www.youtube.com/results?search_query=${encodeURIComponent(item.topic + ' ' + item.channel)}`;
+                const accuracy = item.doneQ > 0 ? Math.round((item.correctQ / item.doneQ) * 100) : 0;
+
+                return `
+                    <div class="bg-slate-900 border border-slate-800 hover:border-slate-700 p-4 rounded-2xl transition space-y-3">
+                        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                            <div class="flex items-start gap-3">
+                                <input type="checkbox" onchange="toggleTopicWatched('${item.id}')" ${item.watched ? 'checked' : ''} class="mt-1 w-5 h-5 rounded bg-slate-800 border-slate-700 text-emerald-500 focus:ring-emerald-500 cursor-pointer">
+                                <div>
+                                    <div class="flex flex-wrap items-center gap-2">
+                                        <span class="bg-slate-800 text-emerald-400 font-bold px-2 py-0.5 rounded text-[11px] border border-slate-700">${item.subject}</span>
+                                        <span class="text-xs text-slate-400 font-medium"><i class="fa-regular fa-calendar"></i> ${item.month}</span>
+                                        <span class="bg-slate-800 text-amber-300 text-[10px] px-2 py-0.5 rounded border border-slate-700">Peso ${item.weight} UFES</span>
+                                    </div>
+                                    <h4 class="font-bold text-white text-base mt-1 ${item.watched ? 'line-through text-slate-400' : ''}">${item.topic}</h4>
+                                    <div class="flex items-center gap-2 text-xs text-slate-400 mt-1">
+                                        <span class="text-red-400 font-semibold"><i class="fa-brands fa-youtube"></i> ${item.channel}</span>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="flex items-center gap-2 self-start sm:self-center">
+                                <a href="${ytSearchUrl}" target="_blank" class="bg-red-600/20 hover:bg-red-600/40 text-red-300 px-3 py-1.5 rounded-xl border border-red-500/40 text-xs font-semibold flex items-center gap-1.5 transition">
+                                    <i class="fa-brands fa-youtube"></i> Assistir no YouTube
+                                </a>
+                            </div>
+                        </div>
+
+                        <!-- Questions Stats Input Row -->
+                        <div class="bg-slate-950/70 p-3 rounded-xl border border-slate-800/80 flex flex-wrap items-center justify-between gap-3 text-xs">
+                            <div class="flex items-center gap-2">
+                                <span class="text-slate-400">Meta: <strong class="text-white">${item.targetQ} q.</strong></span>
+                            </div>
+
+                            <div class="flex items-center gap-4">
+                                <div class="flex items-center gap-1.5">
+                                    <label class="text-slate-400">Feitas:</label>
+                                    <input type="number" min="0" value="${item.doneQ}" onchange="updateTopicQuestions('${item.id}', 'doneQ', this.value)" class="w-16 bg-slate-800 border border-slate-700 rounded px-2 py-1 text-white text-center focus:outline-none focus:border-emerald-500">
+                                </div>
+
+                                <div class="flex items-center gap-1.5">
+                                    <label class="text-slate-400">Acertos:</label>
+                                    <input type="number" min="0" value="${item.correctQ}" onchange="updateTopicQuestions('${item.id}', 'correctQ', this.value)" class="w-16 bg-slate-800 border border-slate-700 rounded px-2 py-1 text-white text-center focus:outline-none focus:border-emerald-500">
+                                </div>
+
+                                <div class="text-right min-w-[70px]">
+                                    <span class="font-bold ${accuracy >= 75 ? 'text-emerald-400' : accuracy >= 50 ? 'text-amber-400' : 'text-slate-400'}">${accuracy}% acerto</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        function toggleTopicWatched(id) {
+            const item = appData.syllabus.find(t => t.id === id);
+            if (item) {
+                item.watched = !item.watched;
+                saveState();
+                renderSyllabus();
+            }
+        }
+
+        function updateTopicQuestions(id, field, value) {
+            const item = appData.syllabus.find(t => t.id === id);
+            if (item) {
+                item[field] = Math.max(0, parseInt(value) || 0);
+                saveState();
+                renderSyllabus();
+            }
+        }
+
+        // RENDER CENTRAL DE SIMULADOS
+        function renderSimuladosGrid() {
+            const grid = document.getElementById('simuladosListGrid');
+            grid.innerHTML = '';
+
+            appData.simulados.forEach(sim => {
+                const isDone = sim.mat !== null;
+                const weightedScore = isDone ? calculateUFESWeightedScore(sim.mat, sim.hum, sim.red, sim.ling, sim.nat) : 0;
+
+                const card = document.createElement('div');
+                card.className = `bg-slate-900 border rounded-2xl p-5 space-y-3 flex flex-col justify-between ${
+                    isDone ? 'border-emerald-500/40 bg-slate-900/90' : 'border-slate-800'
+                }`;
+
+                card.innerHTML = `
+                    <div class="space-y-2">
+                        <div class="flex justify-between items-start gap-2">
+                            <span class="text-[11px] font-bold uppercase tracking-wider ${isDone ? 'text-emerald-400' : 'text-slate-500'}">${sim.month}</span>
+                            <span class="text-xs px-2 py-0.5 rounded font-semibold ${isDone ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/30' : 'bg-slate-800 text-slate-400'}">
+                                ${isDone ? 'Concluído' : 'Pendente'}
+                            </span>
+                        </div>
+                        <h4 class="font-bold text-white text-sm">${sim.title}</h4>
+
+                        ${isDone ? `
+                            <div class="bg-slate-950 p-3 rounded-xl border border-slate-800 space-y-2 text-xs">
+                                <div class="flex justify-between border-b border-slate-800 pb-1">
+                                    <span class="text-slate-400">Média UFES:</span>
+                                    <strong class="text-emerald-400 text-sm">${weightedScore.toFixed(1)} pts</strong>
+                                </div>
+                                <div class="grid grid-cols-2 gap-1 text-[11px] text-slate-300">
+                                    <span>Mat: ${sim.mat}/45</span>
+                                    <span>Hum: ${sim.hum}/45</span>
+                                    <span>Red: ${sim.red} pts</span>
+                                    <span>Ling: ${sim.ling}/45</span>
+                                    <span>Nat: ${sim.nat}/45</span>
+                                </div>
+                            </div>
+                        ` : `
+                            <p class="text-xs text-slate-500 italic">Nenhum resultado lançado ainda.</p>
+                        `}
+                    </div>
+
+                    <button onclick="openSimuladoModal('${sim.id}')" class="w-full mt-2 bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs py-2 rounded-xl font-semibold border border-slate-700 transition flex items-center justify-center gap-1.5">
+                        <i class="fa-solid fa-pen-to-square"></i> ${isDone ? 'Editar Notas' : 'Lançar Notas'}
+                    </button>
+                `;
+
+                grid.appendChild(card);
+            });
+        }
+
+        // SIMULADO MODAL ACTIONS
+        function openSimuladoModal(simId) {
+            const sim = appData.simulados.find(s => s.id === simId);
+            if (!sim) return;
+
+            document.getElementById('modalSimId').value = sim.id;
+            document.getElementById('modalSimTitle').textContent = sim.title;
+            document.getElementById('modalLing').value = sim.ling !== null ? sim.ling : '';
+            document.getElementById('modalHum').value = sim.hum !== null ? sim.hum : '';
+            document.getElementById('modalNat').value = sim.nat !== null ? sim.nat : '';
+            document.getElementById('modalMat').value = sim.mat !== null ? sim.mat : '';
+            document.getElementById('modalRed').value = sim.red !== null ? sim.red : '';
+
+            document.getElementById('simuladoModal').classList.remove('hidden');
+        }
+
+        function closeSimuladoModal() {
+            document.getElementById('simuladoModal').classList.add('hidden');
+        }
+
+        function saveSimuladoData() {
+            const id = document.getElementById('modalSimId').value;
+            const sim = appData.simulados.find(s => s.id === id);
+            if (!sim) return;
+
+            const mat = parseInt(document.getElementById('modalMat').value);
+            const hum = parseInt(document.getElementById('modalHum').value);
+            const red = parseInt(document.getElementById('modalRed').value);
+            const ling = parseInt(document.getElementById('modalLing').value);
+            const nat = parseInt(document.getElementById('modalNat').value);
+
+            if (isNaN(mat) || isNaN(hum) || isNaN(red) || isNaN(ling) || isNaN(nat)) {
+                alert('Por favor preencha todos os campos corretamente!');
+                return;
+            }
+
+            sim.mat = mat;
+            sim.hum = hum;
+            sim.red = red;
+            sim.ling = ling;
+            sim.nat = nat;
+            sim.date = new Date().toISOString().split('T')[0];
+
+            saveState();
+            renderSimuladosGrid();
+            updateChart();
+            closeSimuladoModal();
+        }
+
+        // CHART LOGIC (CHART.JS)
+        function initChart() {
+            const ctx = document.getElementById('simulationsChart').getContext('2d');
+            chartInstance = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: [],
+                    datasets: [
+                        {
+                            label: 'Sua Média UFES (Economia)',
+                            data: [],
+                            borderColor: '#10b981',
+                            backgroundColor: 'rgba(16, 185, 129, 0.1)',
+                            borderWidth: 3,
+                            fill: true,
+                            tension: 0.3
+                        },
+                        {
+                            label: 'Corte Ref. UFES (~734.65)',
+                            data: [],
+                            borderColor: '#ef4444',
+                            borderWidth: 2,
+                            borderDash: [5, 5],
+                            pointRadius: 0,
+                            fill: false
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { labels: { color: '#94a3b8' } }
+                    },
+                    scales: {
+                        x: { ticks: { color: '#64748b' }, grid: { color: '#1e293b' } },
+                        y: { min: 400, max: 950, ticks: { color: '#64748b' }, grid: { color: '#1e293b' } }
+                    }
+                }
+            });
+            updateChart();
+        }
+
+        function updateChart() {
+            if (!chartInstance) return;
+
+            const completed = appData.simulados.filter(s => s.mat !== null);
+            const labels = completed.map(s => `#${s.num} ${s.month}`);
+            const scores = completed.map(s => calculateUFESWeightedScore(s.mat, s.hum, s.red, s.ling, s.nat));
+            const cutoffLine = completed.map(() => 734.65);
+
+            chartInstance.data.labels = labels;
+            chartInstance.data.datasets[0].data = scores;
+            chartInstance.data.datasets[1].data = cutoffLine;
+            chartInstance.update();
+        }
+
+        // BACKUP & RESTORE DATA
+        function exportData() {
+            const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(appData, null, 2));
+            const downloadAnchor = document.createElement('a');
+            downloadAnchor.setAttribute("href", dataStr);
+            downloadAnchor.setAttribute("download", `ENEM_2027_UFES_Backup_${new Date().toISOString().split('T')[0]}.json`);
+            document.body.appendChild(downloadAnchor);
+            downloadAnchor.click();
+            downloadAnchor.remove();
+        }
+
+        function importData(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                try {
+                    const parsed = JSON.parse(e.target.result);
+                    if (parsed.syllabus && parsed.simulados) {
+                        appData = parsed;
+                        saveState();
+                        location.reload();
+                    } else {
+                        alert('Arquivo JSON de backup inválido.');
+                    }
+                } catch (err) {
+                    alert('Erro ao importar backup JSON.');
+                }
+            };
+            reader.readAsText(file);
+        }
+
+        function confirmReset() {
+            if (confirm('Atenção: deseja resetar todo o seu progresso de volta ao estado inicial?')) {
+                localStorage.removeItem(STORAGE_KEY);
+                location.reload();
+            }
+        }
+    </script>
+</body>
+</html>
