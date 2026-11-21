@@ -1,19 +1,22 @@
 <!DOCTYPE html>
-<html lang="pt-BR" class="h-full bg-slate-950 text-slate-100">
+<html lang="pt-BR" class="h-full dark">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Plataforma de Estudos ENEM 2027 | Personalizada</title>
+  <title>Plataforma de Estudos ENEM 2027 | Personalizada & Cloud</title>
+  
   <!-- Tailwind CSS -->
   <script src="https://cdn.tailwindcss.com"></script>
   <!-- FontAwesome Icons -->
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
   <!-- Chart.js -->
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <!-- Supabase JS Client v2 -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <!-- Google Fonts: Inter -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
 
   <script>
     tailwind.config = {
@@ -36,28 +39,51 @@
       }
     }
   </script>
+
   <style>
-    /* Custom Scrollbars & Transitions */
+    /* Custom Scrollbars & Theme Transitions */
     ::-webkit-scrollbar { width: 6px; height: 6px; }
-    ::-webkit-scrollbar-track { background: #0f172a; }
-    ::-webkit-scrollbar-thumb { background: #334155; border-radius: 9999px; }
-    ::-webkit-scrollbar-thumb:hover { background: #475569; }
+    ::-webkit-scrollbar-track { background: transparent; }
+    .dark ::-webkit-scrollbar-thumb { background: #334155; border-radius: 9999px; }
+    ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 9999px; }
+    
+    /* Dynamic Glassmorphism Card Style */
     .glass-card {
-      background: rgba(30, 41, 59, 0.7);
+      transition: background-color 0.3s ease, border-color 0.3s ease, box-shadow 0.3s ease;
+    }
+    .dark .glass-card {
+      background: rgba(15, 23, 42, 0.75);
       backdrop-filter: blur(12px);
       border: 1px solid rgba(255, 255, 255, 0.08);
     }
+    .light .glass-card, html:not(.dark) .glass-card {
+      background: rgba(255, 255, 255, 0.9);
+      backdrop-filter: blur(12px);
+      border: 1px solid rgba(226, 232, 240, 0.9);
+      box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -1px rgba(0, 0, 0, 0.03);
+    }
+
+    /* Animation Utilities */
+    .fade-in { animation: fadeIn 0.25s ease-out forwards; }
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(6px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
   </style>
 </head>
-<body class="h-full font-sans antialiased bg-slate-950 text-slate-100 flex flex-col min-h-screen">
+
+<body class="h-full font-sans antialiased bg-slate-100 text-slate-900 dark:bg-slate-950 dark:text-slate-100 flex flex-col min-h-screen transition-colors duration-300">
+
+  <!-- TOAST NOTIFICATION CONTAINER -->
+  <div id="toast-container" class="fixed bottom-5 right-5 z-50 flex flex-col gap-2 max-w-sm pointer-events-none"></div>
 
   <!-- TOP HEADER / NAV BAR -->
-  <header class="sticky top-0 z-40 bg-slate-900/90 backdrop-blur-md border-b border-slate-800 px-4 lg:px-8 py-3">
+  <header class="sticky top-0 z-40 bg-white/90 dark:bg-slate-900/90 backdrop-blur-md border-b border-slate-200 dark:border-slate-800 px-4 lg:px-8 py-3 transition-colors duration-300">
     <div class="max-w-7xl mx-auto flex flex-wrap items-center justify-between gap-4">
       
       <!-- Brand & Student Header -->
       <div class="flex items-center space-x-3">
-        <div id="header-avatar" class="relative group cursor-pointer" onclick="openProfileModal()">
+        <div id="header-avatar" class="relative group cursor-pointer" onclick="openProfileModal()" title="Editar Perfil">
           <div class="w-11 h-11 rounded-full bg-gradient-to-tr from-emerald-500 to-cyan-500 flex items-center justify-center text-white font-bold text-lg shadow-md overflow-hidden border-2 border-emerald-400/40">
             <span id="avatar-initials">E</span>
             <img id="avatar-img" class="w-full h-full object-cover hidden" alt="Foto Perfil">
@@ -69,34 +95,51 @@
 
         <div>
           <div class="flex items-center space-x-2">
-            <h1 id="header-student-name" class="font-bold text-slate-100 text-lg leading-tight">Estudante ENEM</h1>
-            <span id="badge-target-univ" class="px-2 py-0.5 rounded-full text-xs font-semibold bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
+            <h1 id="header-student-name" class="font-bold text-slate-900 dark:text-slate-100 text-lg leading-tight">Estudante ENEM</h1>
+            <span id="badge-target-univ" class="px-2 py-0.5 rounded-full text-xs font-semibold bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20">
               UFES - Econ
             </span>
           </div>
-          <p class="text-xs text-slate-400">
-            Meta SISU: <span id="header-target-score" class="font-semibold text-emerald-400">745.5 pts</span> 
-            • Início: <span id="header-start-month" class="text-slate-300 font-medium">Janeiro</span>
+          <p class="text-xs text-slate-500 dark:text-slate-400">
+            Meta SISU: <span id="header-target-score" class="font-semibold text-emerald-600 dark:text-emerald-400">745.5 pts</span> 
+            • Início: <span id="header-start-month" class="text-slate-700 dark:text-slate-300 font-medium">Janeiro</span>
           </p>
         </div>
       </div>
 
-      <!-- Global Actions -->
-      <div class="flex items-center space-x-2 sm:space-x-3">
-        <button onclick="openProfileModal()" class="px-3 py-2 text-xs sm:text-sm font-medium bg-slate-800 hover:bg-slate-700 text-slate-200 rounded-xl transition border border-slate-700 flex items-center space-x-2">
-          <i class="fa-solid fa-sliders text-emerald-400"></i>
-          <span class="hidden sm:inline">Configurar Perfil / Meta</span>
-          <span class="sm:hidden">Perfil</span>
+      <!-- Cloud Sync & Global Actions -->
+      <div class="flex items-center flex-wrap gap-2 sm:gap-3">
+        
+        <!-- Cloud Sync Status Badge -->
+        <div id="cloud-sync-badge" class="px-3 py-1.5 rounded-xl text-xs font-medium flex items-center space-x-2 bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/20 cursor-pointer" onclick="openAuthModal()" title="Clique para entrar na conta">
+          <i id="cloud-sync-icon" class="fa-solid fa-hard-drive"></i>
+          <span id="cloud-sync-text">Modo Convidado (Local)</span>
+        </div>
+
+        <!-- Light / Dark Theme Toggle -->
+        <button onclick="toggleTheme()" class="p-2.5 rounded-xl bg-slate-200 dark:bg-slate-800 text-slate-700 dark:text-slate-300 hover:text-emerald-500 transition border border-slate-300 dark:border-slate-700" title="Alternar Tema Claro/Escuro">
+          <i id="theme-toggle-icon" class="fa-solid fa-sun text-amber-400"></i>
         </button>
 
-        <button onclick="exportBackup()" class="px-3 py-2 text-xs sm:text-sm font-medium bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-xl transition border border-slate-700 flex items-center space-x-1.5" title="Exportar Backup">
-          <i class="fa-solid fa-download text-cyan-400"></i>
-          <span class="hidden md:inline">Backup</span>
+        <!-- Auth Button -->
+        <button id="auth-btn" onclick="openAuthModal()" class="px-3 py-2 text-xs sm:text-sm font-semibold bg-emerald-500 hover:bg-emerald-600 text-white dark:text-slate-950 rounded-xl transition shadow flex items-center space-x-1.5">
+          <i class="fa-solid fa-right-to-bracket"></i>
+          <span id="auth-btn-text">Entrar / Cadastrar</span>
         </button>
 
-        <label class="px-3 py-2 text-xs sm:text-sm font-medium bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-xl transition border border-slate-700 cursor-pointer flex items-center space-x-1.5" title="Importar Backup">
-          <i class="fa-solid fa-upload text-amber-400"></i>
-          <span class="hidden md:inline">Restaurar</span>
+        <!-- Profile Settings Button -->
+        <button onclick="openProfileModal()" class="px-3 py-2 text-xs sm:text-sm font-medium bg-slate-200 dark:bg-slate-800 hover:bg-slate-300 dark:hover:bg-slate-700 text-slate-800 dark:text-slate-200 rounded-xl transition border border-slate-300 dark:border-slate-700 flex items-center space-x-1.5">
+          <i class="fa-solid fa-sliders text-emerald-500 dark:text-emerald-400"></i>
+          <span class="hidden sm:inline">Perfil & Meta</span>
+        </button>
+
+        <!-- Backup & Restore -->
+        <button onclick="exportBackup()" class="p-2.5 bg-slate-200 dark:bg-slate-800 hover:bg-slate-300 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 rounded-xl transition border border-slate-300 dark:border-slate-700" title="Exportar Backup JSON">
+          <i class="fa-solid fa-download text-cyan-500"></i>
+        </button>
+
+        <label class="p-2.5 bg-slate-200 dark:bg-slate-800 hover:bg-slate-300 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 rounded-xl transition border border-slate-300 dark:border-slate-700 cursor-pointer" title="Restaurar Backup JSON">
+          <i class="fa-solid fa-upload text-amber-500"></i>
           <input type="file" id="import-file" accept=".json" class="hidden" onchange="importBackup(event)">
         </label>
       </div>
@@ -105,21 +148,21 @@
   </header>
 
   <!-- MAIN NAVIGATION TABS -->
-  <div class="bg-slate-900 border-b border-slate-800">
+  <div class="bg-white dark:bg-slate-900 border-b border-slate-200 dark:border-slate-800 transition-colors duration-300">
     <div class="max-w-7xl mx-auto px-4 lg:px-8 flex space-x-2 overflow-x-auto py-2 no-scrollbar">
-      <button onclick="switchTab('dashboard')" id="tab-btn-dashboard" class="tab-btn active text-xs sm:text-sm font-medium px-4 py-2 rounded-xl transition flex items-center space-x-2 whitespace-nowrap bg-emerald-500/10 text-emerald-400 border border-emerald-500/30">
+      <button onclick="switchTab('dashboard')" id="tab-btn-dashboard" class="tab-btn active text-xs sm:text-sm font-medium px-4 py-2 rounded-xl transition flex items-center space-x-2 whitespace-nowrap bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/30">
         <i class="fa-solid fa-chart-line"></i>
         <span>Painel Geral & Resumo</span>
       </button>
-      <button onclick="switchTab('cronograma')" id="tab-btn-cronograma" class="tab-btn text-xs sm:text-sm font-medium px-4 py-2 rounded-xl text-slate-400 hover:text-slate-200 hover:bg-slate-800 transition flex items-center space-x-2 whitespace-nowrap">
+      <button onclick="switchTab('cronograma')" id="tab-btn-cronograma" class="tab-btn text-xs sm:text-sm font-medium px-4 py-2 rounded-xl text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 transition flex items-center space-x-2 whitespace-nowrap">
         <i class="fa-solid fa-calendar-check"></i>
         <span>Trilha Dinâmica & Aulas</span>
       </button>
-      <button onclick="switchTab('simulados')" id="tab-btn-simulados" class="tab-btn text-xs sm:text-sm font-medium px-4 py-2 rounded-xl text-slate-400 hover:text-slate-200 hover:bg-slate-800 transition flex items-center space-x-2 whitespace-nowrap">
+      <button onclick="switchTab('simulados')" id="tab-btn-simulados" class="tab-btn text-xs sm:text-sm font-medium px-4 py-2 rounded-xl text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 transition flex items-center space-x-2 whitespace-nowrap">
         <i class="fa-solid fa-graduation-cap"></i>
         <span>Simulados & Pesos SISU</span>
       </button>
-      <button onclick="switchTab('canais')" id="tab-btn-canais" class="tab-btn text-xs sm:text-sm font-medium px-4 py-2 rounded-xl text-slate-400 hover:text-slate-200 hover:bg-slate-800 transition flex items-center space-x-2 whitespace-nowrap">
+      <button onclick="switchTab('canais')" id="tab-btn-canais" class="tab-btn text-xs sm:text-sm font-medium px-4 py-2 rounded-xl text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 transition flex items-center space-x-2 whitespace-nowrap">
         <i class="fa-brands fa-youtube"></i>
         <span>Canais Recomendados</span>
       </button>
@@ -130,11 +173,11 @@
   <main class="flex-grow max-w-7xl w-full mx-auto p-4 lg:p-8 space-y-6">
 
     <!-- TAB 1: DASHBOARD OVERVIEW -->
-    <section id="tab-dashboard" class="tab-content space-y-6">
+    <section id="tab-dashboard" class="tab-content fade-in space-y-6">
       
       <!-- Target Banner Card -->
-      <div class="glass-card rounded-2xl p-6 relative overflow-hidden bg-gradient-to-r from-slate-900 via-slate-900 to-slate-850">
-        <div class="absolute right-0 top-0 w-96 h-96 bg-emerald-500/5 rounded-full blur-3xl pointer-events-none"></div>
+      <div class="glass-card rounded-2xl p-6 relative overflow-hidden bg-gradient-to-r from-slate-900 via-slate-900 to-slate-850 text-white">
+        <div class="absolute right-0 top-0 w-96 h-96 bg-emerald-500/10 rounded-full blur-3xl pointer-events-none"></div>
         <div class="flex flex-col md:flex-row md:items-center justify-between gap-6 relative z-10">
           
           <div class="space-y-2">
@@ -145,22 +188,22 @@
             <h2 class="text-2xl sm:text-3xl font-extrabold text-white">
               Bem-vindo(a), <span id="dash-student-name" class="text-transparent bg-clip-text bg-gradient-to-r from-emerald-400 to-cyan-400">Estudante</span>!
             </h2>
-            <p class="text-slate-400 text-sm max-w-2xl">
-              Sua meta atual é <strong id="dash-course-name" class="text-slate-200">Ciências Econômicas</strong> na 
-              <strong id="dash-univ-name" class="text-slate-200">UFES</strong> (Nota de corte estimada: <span id="dash-target-score" class="text-emerald-400 font-bold">745.5</span>).
-              O cronograma está calibrado para início em <strong id="dash-start-month" class="text-slate-200">Janeiro</strong> com 
+            <p class="text-slate-300 text-sm max-w-2xl">
+              Sua meta atual é <strong id="dash-course-name" class="text-white">Ciências Econômicas</strong> na 
+              <strong id="dash-univ-name" class="text-white">UFES</strong> (Nota de corte estimada: <span id="dash-target-score" class="text-emerald-400 font-bold">745.5</span>).
+              O cronograma está calibrado para início em <strong id="dash-start-month" class="text-white">Janeiro</strong> com 
               <span id="dash-total-weeks" class="text-cyan-400 font-semibold">44 semanas</span> de preparação.
             </p>
           </div>
 
-          <!-- Countdown / Meta Status Badge -->
-          <div class="flex flex-row md:flex-col items-center md:items-end justify-between bg-slate-950/60 p-4 rounded-xl border border-slate-800 min-w-[200px]">
+          <!-- Countdown Badge -->
+          <div class="flex flex-row md:flex-col items-center md:items-end justify-between bg-slate-950/70 p-4 rounded-xl border border-slate-800 min-w-[200px]">
             <div class="text-left md:text-right">
               <div class="text-xs text-slate-400 uppercase font-semibold">Dias até o ENEM 2027</div>
               <div id="days-countdown" class="text-2xl font-black text-amber-400">~ 360 dias</div>
             </div>
             <div class="text-right mt-1">
-              <span class="text-[11px] text-slate-500 block">Pesos oficiais aplicados</span>
+              <span class="text-[11px] text-slate-400 block">Pesos oficiais aplicados</span>
             </div>
           </div>
 
@@ -173,14 +216,14 @@
         <!-- Total Progresso Tópicos -->
         <div class="glass-card p-5 rounded-2xl border-l-4 border-l-emerald-500">
           <div class="flex items-center justify-between">
-            <span class="text-xs font-semibold uppercase text-slate-400">Progresso Geral</span>
-            <i class="fa-solid fa-check-double text-emerald-400 text-lg"></i>
+            <span class="text-xs font-semibold uppercase text-slate-500 dark:text-slate-400">Progresso Geral</span>
+            <i class="fa-solid fa-check-double text-emerald-500 text-lg"></i>
           </div>
           <div class="mt-3 flex items-baseline justify-between">
-            <span id="kpi-progress-pct" class="text-3xl font-bold text-white">0%</span>
-            <span id="kpi-topics-count" class="text-xs text-slate-400">0 de 0 tópicos</span>
+            <span id="kpi-progress-pct" class="text-3xl font-extrabold text-slate-900 dark:text-white">0%</span>
+            <span id="kpi-topics-count" class="text-xs text-slate-500 dark:text-slate-400">0 de 0 tópicos</span>
           </div>
-          <div class="w-full bg-slate-800 h-2 rounded-full mt-3 overflow-hidden">
+          <div class="w-full bg-slate-200 dark:bg-slate-800 h-2 rounded-full mt-3 overflow-hidden">
             <div id="kpi-progress-bar" class="bg-gradient-to-r from-emerald-500 to-emerald-400 h-full w-0 transition-all duration-500"></div>
           </div>
         </div>
@@ -188,44 +231,44 @@
         <!-- Questões Realizadas -->
         <div class="glass-card p-5 rounded-2xl border-l-4 border-l-cyan-500">
           <div class="flex items-center justify-between">
-            <span class="text-xs font-semibold uppercase text-slate-400">Questões Resolvidas</span>
-            <i class="fa-solid fa-pen-ruler text-cyan-400 text-lg"></i>
+            <span class="text-xs font-semibold uppercase text-slate-500 dark:text-slate-400">Questões Resolvidas</span>
+            <i class="fa-solid fa-pen-ruler text-cyan-500 text-lg"></i>
           </div>
           <div class="mt-3 flex items-baseline justify-between">
-            <span id="kpi-questions-total" class="text-3xl font-bold text-white">0</span>
-            <span class="text-xs text-slate-400">Meta: <span id="kpi-questions-target">3.500+</span></span>
+            <span id="kpi-questions-total" class="text-3xl font-extrabold text-slate-900 dark:text-white">0</span>
+            <span class="text-xs text-slate-500 dark:text-slate-400">Meta: <span id="kpi-questions-target" class="font-semibold text-slate-700 dark:text-slate-300">3.500+</span></span>
           </div>
-          <p class="text-[11px] text-slate-400 mt-2">
-            Taxa de Acerto: <strong id="kpi-accuracy-pct" class="text-cyan-400">0.0%</strong>
+          <p class="text-[11px] text-slate-500 dark:text-slate-400 mt-2">
+            Taxa de Acerto: <strong id="kpi-accuracy-pct" class="text-cyan-600 dark:text-cyan-400">0.0%</strong>
           </p>
         </div>
 
         <!-- Última Nota Ponderada -->
         <div class="glass-card p-5 rounded-2xl border-l-4 border-l-purple-500">
           <div class="flex items-center justify-between">
-            <span class="text-xs font-semibold uppercase text-slate-400">Último Simulado</span>
-            <i class="fa-solid fa-chart-simple text-purple-400 text-lg"></i>
+            <span class="text-xs font-semibold uppercase text-slate-500 dark:text-slate-400">Último Simulado</span>
+            <i class="fa-solid fa-chart-simple text-purple-500 text-lg"></i>
           </div>
           <div class="mt-3 flex items-baseline justify-between">
-            <span id="kpi-last-sim-score" class="text-3xl font-bold text-white">---</span>
-            <span class="text-xs text-slate-400">Target: <span id="kpi-sim-target" class="text-purple-300">745.5</span></span>
+            <span id="kpi-last-sim-score" class="text-3xl font-extrabold text-slate-900 dark:text-white">---</span>
+            <span class="text-xs text-slate-500 dark:text-slate-400">Target: <span id="kpi-sim-target" class="text-purple-600 dark:text-purple-300">745.5</span></span>
           </div>
-          <p id="kpi-sim-gap" class="text-[11px] text-slate-400 mt-2">
-            Diferença p/ Corte: <strong class="text-amber-400">Pendente</strong>
+          <p id="kpi-sim-gap" class="text-[11px] text-slate-500 dark:text-slate-400 mt-2">
+            Diferença p/ Corte: <strong class="text-amber-500">Pendente</strong>
           </p>
         </div>
 
         <!-- Ritmo Semanal -->
         <div class="glass-card p-5 rounded-2xl border-l-4 border-l-amber-500">
           <div class="flex items-center justify-between">
-            <span class="text-xs font-semibold uppercase text-slate-400">Carga Recomendada</span>
-            <i class="fa-solid fa-clock text-amber-400 text-lg"></i>
+            <span class="text-xs font-semibold uppercase text-slate-500 dark:text-slate-400">Carga Recomendada</span>
+            <i class="fa-solid fa-clock text-amber-500 text-lg"></i>
           </div>
           <div class="mt-3 flex items-baseline justify-between">
-            <span id="kpi-weekly-hours" class="text-3xl font-bold text-white">30h/sem</span>
-            <span class="text-xs text-amber-400 font-semibold">Seg a Dom</span>
+            <span id="kpi-weekly-hours" class="text-3xl font-extrabold text-slate-900 dark:text-white">30h/sem</span>
+            <span class="text-xs text-amber-600 dark:text-amber-400 font-semibold">Seg a Dom</span>
           </div>
-          <p class="text-[11px] text-slate-400 mt-2">
+          <p class="text-[11px] text-slate-500 dark:text-slate-400 mt-2">
             4h/dia útil + 5h Sáb/Dom
           </p>
         </div>
@@ -237,16 +280,16 @@
         
         <!-- Pesos SISU Card -->
         <div class="glass-card rounded-2xl p-6 lg:col-span-1 space-y-4">
-          <div class="flex items-center justify-between border-b border-slate-800 pb-3">
-            <h3 class="font-bold text-slate-200 flex items-center space-x-2">
-              <i class="fa-solid fa-scale-balanced text-emerald-400"></i>
+          <div class="flex items-center justify-between border-b border-slate-200 dark:border-slate-800 pb-3">
+            <h3 class="font-bold text-slate-900 dark:text-slate-200 flex items-center space-x-2">
+              <i class="fa-solid fa-scale-balanced text-emerald-500"></i>
               <span>Pesos SISU do Seu Curso</span>
             </h3>
-            <span class="text-[11px] bg-slate-800 text-slate-400 px-2 py-0.5 rounded">Oficial</span>
+            <span class="text-[11px] bg-slate-200 dark:bg-slate-800 text-slate-600 dark:text-slate-400 px-2 py-0.5 rounded font-medium">Oficial</span>
           </div>
 
-          <p class="text-xs text-slate-400">
-            A média ponderada dos simulados é calculada atribuindo maior relevância às matérias de maior peso na <strong id="weights-univ-label">UFES</strong>.
+          <p class="text-xs text-slate-500 dark:text-slate-400">
+            A média ponderada dos simulados é calculada atribuindo maior relevância às matérias de maior peso na <strong id="weights-univ-label" class="text-slate-700 dark:text-slate-200">UFES</strong>.
           </p>
 
           <div id="weights-bars-container" class="space-y-3 pt-2">
@@ -256,15 +299,15 @@
 
         <!-- Chart Card -->
         <div class="glass-card rounded-2xl p-6 lg:col-span-2 flex flex-col justify-between space-y-4">
-          <div class="flex items-center justify-between border-b border-slate-800 pb-3">
+          <div class="flex items-center justify-between border-b border-slate-200 dark:border-slate-800 pb-3">
             <div>
-              <h3 class="font-bold text-slate-200 flex items-center space-x-2">
-                <i class="fa-solid fa-chart-area text-cyan-400"></i>
+              <h3 class="font-bold text-slate-900 dark:text-slate-200 flex items-center space-x-2">
+                <i class="fa-solid fa-chart-area text-cyan-500"></i>
                 <span>Evolução nos Simulados vs. Nota de Corte</span>
               </h3>
-              <p class="text-xs text-slate-400">Acompanhe sua nota ponderada ao longo dos meses de preparação.</p>
+              <p class="text-xs text-slate-500 dark:text-slate-400">Acompanhe sua nota ponderada ao longo das semanas de preparação.</p>
             </div>
-            <button onclick="switchTab('simulados')" class="text-xs text-emerald-400 hover:text-emerald-300 font-semibold">
+            <button onclick="switchTab('simulados')" class="text-xs text-emerald-600 dark:text-emerald-400 hover:underline font-semibold">
               + Registrar Simulado
             </button>
           </div>
@@ -280,23 +323,23 @@
 
 
     <!-- TAB 2: CRONOGRAMA DINÂMICO & TRILHA -->
-    <section id="tab-cronograma" class="tab-content hidden space-y-6">
+    <section id="tab-cronograma" class="tab-content hidden fade-in space-y-6">
       
       <!-- Top Dynamic Compression Alert & Selector -->
-      <div class="glass-card p-5 rounded-2xl bg-gradient-to-r from-slate-900 via-slate-900 to-emerald-950/30 border border-emerald-500/20 flex flex-col md:flex-row md:items-center justify-between gap-4">
+      <div class="glass-card p-5 rounded-2xl border border-emerald-500/20 flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div class="space-y-1">
-          <h3 class="font-bold text-lg text-white flex items-center space-x-2">
-            <i class="fa-solid fa-sliders text-emerald-400"></i>
+          <h3 class="font-bold text-lg text-slate-900 dark:text-white flex items-center space-x-2">
+            <i class="fa-solid fa-sliders text-emerald-500"></i>
             <span>Trilha de Conteúdos Adaptativa</span>
           </h3>
-          <p class="text-xs text-slate-300">
-            Os tópicos e o volume de questões são distribuídos nas semanas ativas do seu plano (Início em <strong id="trilha-month-name" class="text-emerald-400">Janeiro</strong> • <span id="trilha-week-count" class="font-semibold text-cyan-400">44 Semanas</span>).
+          <p class="text-xs text-slate-600 dark:text-slate-300">
+            Os tópicos e a meta de questões são calibrados conforme o mês de início (<strong id="trilha-month-name" class="text-emerald-600 dark:text-emerald-400">Janeiro</strong> • <span id="trilha-week-count" class="font-semibold text-cyan-600 dark:text-cyan-400">44 Semanas</span>).
           </p>
         </div>
 
         <div class="flex items-center space-x-2">
-          <span class="text-xs text-slate-400 whitespace-nowrap">Filtrar por Área:</span>
-          <select id="filter-area" onchange="renderSchedule()" class="bg-slate-950 border border-slate-700 text-xs rounded-xl px-3 py-2 text-slate-200 focus:outline-none focus:border-emerald-500">
+          <span class="text-xs text-slate-500 dark:text-slate-400 whitespace-nowrap">Filtrar por Área:</span>
+          <select id="filter-area" onchange="renderSchedule()" class="bg-slate-100 dark:bg-slate-950 border border-slate-300 dark:border-slate-700 text-xs rounded-xl px-3 py-2 text-slate-900 dark:text-slate-200 focus:outline-none focus:border-emerald-500">
             <option value="all">Todas as Áreas</option>
             <option value="Matemática">Matemática</option>
             <option value="Ciências Humanas">Ciências Humanas</option>
@@ -316,54 +359,54 @@
 
 
     <!-- TAB 3: SIMULADOS & CÁLCULO SISU -->
-    <section id="tab-simulados" class="tab-content hidden space-y-6">
+    <section id="tab-simulados" class="tab-content hidden fade-in space-y-6">
       
       <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
         
         <!-- Form Registrar Simulado -->
         <div class="glass-card p-6 rounded-2xl lg:col-span-1 space-y-4">
-          <div class="border-b border-slate-800 pb-3">
-            <h3 class="font-bold text-slate-200 flex items-center space-x-2">
-              <i class="fa-solid fa-plus-circle text-emerald-400"></i>
+          <div class="border-b border-slate-200 dark:border-slate-800 pb-3">
+            <h3 class="font-bold text-slate-900 dark:text-slate-200 flex items-center space-x-2">
+              <i class="fa-solid fa-plus-circle text-emerald-500"></i>
               <span>Novo Registro de Simulado</span>
             </h3>
-            <p class="text-xs text-slate-400">Digite sua nota bruta de 0 a 1000 em cada área.</p>
+            <p class="text-xs text-slate-500 dark:text-slate-400">Digite sua nota de 0 a 1000 em cada área.</p>
           </div>
 
           <form id="simulado-form" onsubmit="saveSimulado(event)" class="space-y-3">
             <div>
-              <label class="block text-xs font-semibold text-slate-300 mb-1">Data da Prova</label>
-              <input type="date" id="sim-date" required class="w-full bg-slate-950 border border-slate-700 rounded-xl px-3 py-2 text-xs text-slate-200 focus:border-emerald-500 focus:outline-none">
+              <label class="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">Data da Prova</label>
+              <input type="date" id="sim-date" required class="w-full bg-slate-100 dark:bg-slate-950 border border-slate-300 dark:border-slate-700 rounded-xl px-3 py-2 text-xs text-slate-900 dark:text-slate-200 focus:border-emerald-500 focus:outline-none">
             </div>
 
             <div class="grid grid-cols-2 gap-3">
               <div>
-                <label class="block text-xs font-semibold text-slate-300 mb-1">Matemática</label>
-                <input type="number" id="sim-mat" min="0" max="1000" placeholder="Ex: 780" required class="w-full bg-slate-950 border border-slate-700 rounded-xl px-3 py-2 text-xs text-slate-200 focus:border-emerald-500 focus:outline-none">
+                <label class="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">Matemática</label>
+                <input type="number" id="sim-mat" min="0" max="1000" placeholder="Ex: 780" required class="w-full bg-slate-100 dark:bg-slate-950 border border-slate-300 dark:border-slate-700 rounded-xl px-3 py-2 text-xs text-slate-900 dark:text-slate-200 focus:border-emerald-500 focus:outline-none">
               </div>
               <div>
-                <label class="block text-xs font-semibold text-slate-300 mb-1">Humanas</label>
-                <input type="number" id="sim-hum" min="0" max="1000" placeholder="Ex: 720" required class="w-full bg-slate-950 border border-slate-700 rounded-xl px-3 py-2 text-xs text-slate-200 focus:border-emerald-500 focus:outline-none">
+                <label class="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">Humanas</label>
+                <input type="number" id="sim-hum" min="0" max="1000" placeholder="Ex: 720" required class="w-full bg-slate-100 dark:bg-slate-950 border border-slate-300 dark:border-slate-700 rounded-xl px-3 py-2 text-xs text-slate-900 dark:text-slate-200 focus:border-emerald-500 focus:outline-none">
               </div>
             </div>
 
             <div class="grid grid-cols-2 gap-3">
               <div>
-                <label class="block text-xs font-semibold text-slate-300 mb-1">Linguagens</label>
-                <input type="number" id="sim-lin" min="0" max="1000" placeholder="Ex: 660" required class="w-full bg-slate-950 border border-slate-700 rounded-xl px-3 py-2 text-xs text-slate-200 focus:border-emerald-500 focus:outline-none">
+                <label class="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">Linguagens</label>
+                <input type="number" id="sim-lin" min="0" max="1000" placeholder="Ex: 660" required class="w-full bg-slate-100 dark:bg-slate-950 border border-slate-300 dark:border-slate-700 rounded-xl px-3 py-2 text-xs text-slate-900 dark:text-slate-200 focus:border-emerald-500 focus:outline-none">
               </div>
               <div>
-                <label class="block text-xs font-semibold text-slate-300 mb-1">Natureza</label>
-                <input type="number" id="sim-nat" min="0" max="1000" placeholder="Ex: 690" required class="w-full bg-slate-950 border border-slate-700 rounded-xl px-3 py-2 text-xs text-slate-200 focus:border-emerald-500 focus:outline-none">
+                <label class="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">Natureza</label>
+                <input type="number" id="sim-nat" min="0" max="1000" placeholder="Ex: 690" required class="w-full bg-slate-100 dark:bg-slate-950 border border-slate-300 dark:border-slate-700 rounded-xl px-3 py-2 text-xs text-slate-900 dark:text-slate-200 focus:border-emerald-500 focus:outline-none">
               </div>
             </div>
 
             <div>
-              <label class="block text-xs font-semibold text-slate-300 mb-1">Redação</label>
-              <input type="number" id="sim-red" min="0" max="1000" placeholder="Ex: 920" required class="w-full bg-slate-950 border border-slate-700 rounded-xl px-3 py-2 text-xs text-slate-200 focus:border-emerald-500 focus:outline-none">
+              <label class="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">Redação</label>
+              <input type="number" id="sim-red" min="0" max="1000" placeholder="Ex: 920" required class="w-full bg-slate-100 dark:bg-slate-950 border border-slate-300 dark:border-slate-700 rounded-xl px-3 py-2 text-xs text-slate-900 dark:text-slate-200 focus:border-emerald-500 focus:outline-none">
             </div>
 
-            <button type="submit" class="w-full py-2.5 bg-gradient-to-r from-emerald-500 to-emerald-600 hover:from-emerald-600 hover:to-emerald-700 text-slate-950 font-bold text-xs rounded-xl shadow transition">
+            <button type="submit" class="w-full py-2.5 bg-gradient-to-r from-emerald-500 to-emerald-600 hover:from-emerald-600 hover:to-emerald-700 text-white dark:text-slate-950 font-bold text-xs rounded-xl shadow transition">
               Calcular Média Ponderada & Salvar
             </button>
           </form>
@@ -371,19 +414,19 @@
 
         <!-- Tabela de Histórico de Simulados -->
         <div class="glass-card p-6 rounded-2xl lg:col-span-2 space-y-4">
-          <div class="flex items-center justify-between border-b border-slate-800 pb-3">
+          <div class="flex items-center justify-between border-b border-slate-200 dark:border-slate-800 pb-3">
             <div>
-              <h3 class="font-bold text-slate-200 flex items-center space-x-2">
-                <i class="fa-solid fa-list-check text-cyan-400"></i>
+              <h3 class="font-bold text-slate-900 dark:text-slate-200 flex items-center space-x-2">
+                <i class="fa-solid fa-list-check text-cyan-500"></i>
                 <span>Histórico de Provas & Simulados</span>
               </h3>
-              <p class="text-xs text-slate-400">Comparações em tempo real com a nota de corte (<span id="sim-cutoff-ref" class="text-emerald-400 font-semibold">745.5</span>).</p>
+              <p class="text-xs text-slate-500 dark:text-slate-400">Comparações em tempo real com a nota de corte (<span id="sim-cutoff-ref" class="text-emerald-500 font-semibold">745.5</span>).</p>
             </div>
           </div>
 
           <div class="overflow-x-auto">
             <table class="w-full text-left text-xs">
-              <thead class="bg-slate-900/80 text-slate-400 uppercase font-semibold">
+              <thead class="bg-slate-100 dark:bg-slate-900/80 text-slate-500 dark:text-slate-400 uppercase font-semibold">
                 <tr>
                   <th class="p-3 rounded-l-xl">Data</th>
                   <th class="p-3">MAT</th>
@@ -395,7 +438,7 @@
                   <th class="p-3 rounded-r-xl text-right">Ação</th>
                 </tr>
               </thead>
-              <tbody id="simulados-table-body" class="divide-y divide-slate-800/60">
+              <tbody id="simulados-table-body" class="divide-y divide-slate-200 dark:divide-slate-800/60">
                 <!-- Populated dynamically -->
               </tbody>
             </table>
@@ -408,15 +451,15 @@
 
 
     <!-- TAB 4: CANAIS RECOMENDADOS -->
-    <section id="tab-canais" class="tab-content hidden space-y-6">
+    <section id="tab-canais" class="tab-content hidden fade-in space-y-6">
       
       <div class="glass-card p-6 rounded-2xl space-y-2">
-        <h3 class="font-bold text-lg text-white flex items-center space-x-2">
+        <h3 class="font-bold text-lg text-slate-900 dark:text-white flex items-center space-x-2">
           <i class="fa-brands fa-youtube text-red-500 text-xl"></i>
           <span>Canais Recomendados & Professores Referência</span>
         </h3>
-        <p class="text-xs text-slate-300">
-          A plataforma utiliza buscas automáticas direcionadas para os principais canais focados no ENEM. Ao clicar nos botões de aula no cronograma, você será direcionado para o vídeo correspondente nesses canais:
+        <p class="text-xs text-slate-600 dark:text-slate-300">
+          A plataforma utiliza buscas automáticas direcionadas para os principais canais focados no ENEM. Ao clicar nos botões de aula no cronograma, você será direcionado para o vídeo correspondente nestes canais:
         </p>
       </div>
 
@@ -425,18 +468,18 @@
         <!-- Canal Assaad -->
         <div class="glass-card p-5 rounded-2xl space-y-3 hover:border-emerald-500/40 transition">
           <div class="flex items-center space-x-3">
-            <div class="w-12 h-12 rounded-xl bg-red-500/10 border border-red-500/20 flex items-center justify-center text-red-400 text-xl font-bold">
+            <div class="w-12 h-12 rounded-xl bg-red-500/10 border border-red-500/20 flex items-center justify-center text-red-500 text-xl font-bold">
               PA
             </div>
             <div>
-              <h4 class="font-bold text-slate-100">Plataforma Assaad</h4>
-              <p class="text-xs text-emerald-400 font-semibold">Matemática, Física, Química, Biologia, Linguagens</p>
+              <h4 class="font-bold text-slate-900 dark:text-slate-100">Plataforma Assaad</h4>
+              <p class="text-xs text-emerald-600 dark:text-emerald-400 font-semibold">Matemática, Física, Química, Biologia, Linguagens</p>
             </div>
           </div>
-          <p class="text-xs text-slate-400">
+          <p class="text-xs text-slate-500 dark:text-slate-400">
             Foco total em resolução de questões, técnicas de prova rápida e domínio dos modelos recorrentes do ENEM.
           </p>
-          <a href="https://www.youtube.com/@PlataformaAssaad" target="_blank" class="inline-flex items-center text-xs font-semibold text-red-400 hover:text-red-300 space-x-1">
+          <a href="https://www.youtube.com/@PlataformaAssaad" target="_blank" class="inline-flex items-center text-xs font-semibold text-red-500 hover:text-red-600 space-x-1">
             <span>Visitar Canal no YouTube</span>
             <i class="fa-solid fa-arrow-up-right-from-square text-[10px]"></i>
           </a>
@@ -445,18 +488,18 @@
         <!-- Parabólica -->
         <div class="glass-card p-5 rounded-2xl space-y-3 hover:border-emerald-500/40 transition">
           <div class="flex items-center space-x-3">
-            <div class="w-12 h-12 rounded-xl bg-amber-500/10 border border-amber-500/20 flex items-center justify-center text-amber-400 text-xl font-bold">
+            <div class="w-12 h-12 rounded-xl bg-amber-500/10 border border-amber-500/20 flex items-center justify-center text-amber-500 text-xl font-bold">
               CP
             </div>
             <div>
-              <h4 class="font-bold text-slate-100">Canal Parabólica</h4>
-              <p class="text-xs text-amber-400 font-semibold">Filosofia, Sociologia, Atualidades</p>
+              <h4 class="font-bold text-slate-900 dark:text-slate-100">Canal Parabólica</h4>
+              <p class="text-xs text-amber-600 dark:text-amber-400 font-semibold">Filosofia, Sociologia, Atualidades</p>
             </div>
           </div>
-          <p class="text-xs text-slate-400">
+          <p class="text-xs text-slate-500 dark:text-slate-400">
             Prof. Pedro Renno ministrando repertório sociológico e filosófico completo aplicado ao ENEM.
           </p>
-          <a href="https://www.youtube.com/@parabolica" target="_blank" class="inline-flex items-center text-xs font-semibold text-amber-400 hover:text-amber-300 space-x-1">
+          <a href="https://www.youtube.com/@parabolica" target="_blank" class="inline-flex items-center text-xs font-semibold text-amber-500 hover:text-amber-600 space-x-1">
             <span>Visitar Canal no YouTube</span>
             <i class="fa-solid fa-arrow-up-right-from-square text-[10px]"></i>
           </a>
@@ -465,18 +508,18 @@
         <!-- Débora Aladim -->
         <div class="glass-card p-5 rounded-2xl space-y-3 hover:border-emerald-500/40 transition">
           <div class="flex items-center space-x-3">
-            <div class="w-12 h-12 rounded-xl bg-purple-500/10 border border-purple-500/20 flex items-center justify-center text-purple-400 text-xl font-bold">
+            <div class="w-12 h-12 rounded-xl bg-purple-500/10 border border-purple-500/20 flex items-center justify-center text-purple-500 text-xl font-bold">
               DA
             </div>
             <div>
-              <h4 class="font-bold text-slate-100">Débora Aladim</h4>
-              <p class="text-xs text-purple-400 font-semibold">História do Brasil e Geral</p>
+              <h4 class="font-bold text-slate-900 dark:text-slate-100">Débora Aladim</h4>
+              <p class="text-xs text-purple-600 dark:text-purple-400 font-semibold">História do Brasil e Geral</p>
             </div>
           </div>
-          <p class="text-xs text-slate-400">
+          <p class="text-xs text-slate-500 dark:text-slate-400">
             Resumos visuais dinâmicos e cronologias históricas essenciais para acertar as 45 questões de Humanas.
           </p>
-          <a href="https://www.youtube.com/@deboraladim" target="_blank" class="inline-flex items-center text-xs font-semibold text-purple-400 hover:text-purple-300 space-x-1">
+          <a href="https://www.youtube.com/@deboraladim" target="_blank" class="inline-flex items-center text-xs font-semibold text-purple-500 hover:text-purple-600 space-x-1">
             <span>Visitar Canal no YouTube</span>
             <i class="fa-solid fa-arrow-up-right-from-square text-[10px]"></i>
           </a>
@@ -485,18 +528,18 @@
         <!-- Luma e Ponto -->
         <div class="glass-card p-5 rounded-2xl space-y-3 hover:border-emerald-500/40 transition">
           <div class="flex items-center space-x-3">
-            <div class="w-12 h-12 rounded-xl bg-pink-500/10 border border-pink-500/20 flex items-center justify-center text-pink-400 text-xl font-bold">
+            <div class="w-12 h-12 rounded-xl bg-pink-500/10 border border-pink-500/20 flex items-center justify-center text-pink-500 text-xl font-bold">
               LP
             </div>
             <div>
-              <h4 class="font-bold text-slate-100">Luma e Ponto</h4>
-              <p class="text-xs text-pink-400 font-semibold">Redação nota 1000</p>
+              <h4 class="font-bold text-slate-900 dark:text-slate-100">Luma e Ponto</h4>
+              <p class="text-xs text-pink-600 dark:text-pink-400 font-semibold">Redação nota 1000</p>
             </div>
           </div>
-          <p class="text-xs text-slate-400">
+          <p class="text-xs text-slate-500 dark:text-slate-400">
             Modelos de redação sem enrolação, estrutura de projeto de texto e proposta de intervenção perfeita.
           </p>
-          <a href="https://www.youtube.com/@lumaeponto" target="_blank" class="inline-flex items-center text-xs font-semibold text-pink-400 hover:text-pink-300 space-x-1">
+          <a href="https://www.youtube.com/@lumaeponto" target="_blank" class="inline-flex items-center text-xs font-semibold text-pink-500 hover:text-pink-600 space-x-1">
             <span>Visitar Canal no YouTube</span>
             <i class="fa-solid fa-arrow-up-right-from-square text-[10px]"></i>
           </a>
@@ -505,18 +548,18 @@
         <!-- Thais Formagio -->
         <div class="glass-card p-5 rounded-2xl space-y-3 hover:border-emerald-500/40 transition">
           <div class="flex items-center space-x-3">
-            <div class="w-12 h-12 rounded-xl bg-cyan-500/10 border border-cyan-500/20 flex items-center justify-center text-cyan-400 text-xl font-bold">
+            <div class="w-12 h-12 rounded-xl bg-cyan-500/10 border border-cyan-500/20 flex items-center justify-center text-cyan-500 text-xl font-bold">
               TF
             </div>
             <div>
-              <h4 class="font-bold text-slate-100">Thais Formagio</h4>
-              <p class="text-xs text-cyan-400 font-semibold">Geografia Física e Humana</p>
+              <h4 class="font-bold text-slate-900 dark:text-slate-100">Thais Formagio</h4>
+              <p class="text-xs text-cyan-600 dark:text-cyan-400 font-semibold">Geografia Física e Humana</p>
             </div>
           </div>
-          <p class="text-xs text-slate-400">
+          <p class="text-xs text-slate-500 dark:text-slate-400">
             Geopolítica, climatologia, impacto ambiental e análises de gráficos focados na matriz de referência.
           </p>
-          <a href="https://www.youtube.com/@ThaisFormagio" target="_blank" class="inline-flex items-center text-xs font-semibold text-cyan-400 hover:text-cyan-300 space-x-1">
+          <a href="https://www.youtube.com/@ThaisFormagio" target="_blank" class="inline-flex items-center text-xs font-semibold text-cyan-500 hover:text-cyan-600 space-x-1">
             <span>Visitar Canal no YouTube</span>
             <i class="fa-solid fa-arrow-up-right-from-square text-[10px]"></i>
           </a>
@@ -529,19 +572,19 @@
   </main>
 
 
-  <!-- PROFILE MODAL / ONBOARDING -->
+  <!-- MODAL: PROFILE & SISU CONFIG -->
   <div id="profile-modal" class="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-sm flex items-center justify-center p-4 hidden">
-    <div class="glass-card bg-slate-900 border border-slate-700 w-full max-w-xl rounded-3xl p-6 sm:p-8 space-y-6 shadow-2xl relative overflow-y-auto max-h-[90vh]">
+    <div class="glass-card bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 w-full max-w-xl rounded-3xl p-6 sm:p-8 space-y-6 shadow-2xl relative overflow-y-auto max-h-[90vh]">
       
-      <div class="flex items-center justify-between border-b border-slate-800 pb-4">
+      <div class="flex items-center justify-between border-b border-slate-200 dark:border-slate-800 pb-4">
         <div>
-          <h3 class="text-xl font-bold text-white flex items-center space-x-2">
-            <i class="fa-solid fa-user-gear text-emerald-400"></i>
-            <span>Configurar Seu Perfil & Meta</span>
+          <h3 class="text-xl font-bold text-slate-900 dark:text-white flex items-center space-x-2">
+            <i class="fa-solid fa-user-gear text-emerald-500"></i>
+            <span>Configurar Perfil & Meta SISU</span>
           </h3>
-          <p class="text-xs text-slate-400">Personalize a plataforma com suas metas exatas para o SISU 2027.</p>
+          <p class="text-xs text-slate-500 dark:text-slate-400">Personalize a plataforma com suas metas exatas para 2027.</p>
         </div>
-        <button onclick="closeProfileModal()" class="text-slate-400 hover:text-slate-200 text-lg p-2">
+        <button onclick="closeProfileModal()" class="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 text-lg p-2">
           <i class="fa-solid fa-xmark"></i>
         </button>
       </div>
@@ -551,7 +594,7 @@
         <!-- Foto & Nome -->
         <div class="flex flex-col sm:flex-row items-center gap-4">
           <div class="relative group">
-            <div class="w-20 h-20 rounded-full bg-slate-800 border-2 border-emerald-500 overflow-hidden flex items-center justify-center text-2xl font-bold text-emerald-400">
+            <div class="w-20 h-20 rounded-full bg-slate-200 dark:bg-slate-800 border-2 border-emerald-500 overflow-hidden flex items-center justify-center text-2xl font-bold text-emerald-500">
               <span id="modal-avatar-initials">E</span>
               <img id="modal-avatar-preview" class="w-full h-full object-cover hidden" alt="Preview Foto">
             </div>
@@ -562,39 +605,39 @@
           </div>
 
           <div class="flex-grow w-full space-y-1">
-            <label class="block text-xs font-semibold text-slate-300">Seu Nome ou Apelido</label>
-            <input type="text" id="input-name" placeholder="Ex: Lucas Silva" required class="w-full bg-slate-950 border border-slate-700 rounded-xl px-3 py-2 text-sm text-slate-200 focus:border-emerald-500 focus:outline-none">
+            <label class="block text-xs font-semibold text-slate-700 dark:text-slate-300">Seu Nome ou Apelido</label>
+            <input type="text" id="input-name" placeholder="Ex: Lucas Silva" required class="w-full bg-slate-100 dark:bg-slate-950 border border-slate-300 dark:border-slate-700 rounded-xl px-3 py-2 text-sm text-slate-900 dark:text-slate-200 focus:border-emerald-500 focus:outline-none">
           </div>
         </div>
 
         <!-- Universidade e Curso -->
         <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <div class="space-y-1">
-            <label class="block text-xs font-semibold text-slate-300">Universidade Pública (SISU)</label>
-            <select id="select-univ" onchange="onUnivOrCourseChange()" class="w-full bg-slate-950 border border-slate-700 rounded-xl px-3 py-2 text-xs text-slate-200 focus:border-emerald-500 focus:outline-none">
+            <label class="block text-xs font-semibold text-slate-700 dark:text-slate-300">Universidade Pública (SISU)</label>
+            <select id="select-univ" onchange="onUnivOrCourseChange()" class="w-full bg-slate-100 dark:bg-slate-950 border border-slate-300 dark:border-slate-700 rounded-xl px-3 py-2 text-xs text-slate-900 dark:text-slate-200 focus:border-emerald-500 focus:outline-none">
               <!-- Populated dynamically -->
             </select>
           </div>
 
           <div class="space-y-1">
-            <label class="block text-xs font-semibold text-slate-300">Curso Alvo</label>
-            <select id="select-course" onchange="onUnivOrCourseChange()" class="w-full bg-slate-950 border border-slate-700 rounded-xl px-3 py-2 text-xs text-slate-200 focus:border-emerald-500 focus:outline-none">
+            <label class="block text-xs font-semibold text-slate-700 dark:text-slate-300">Curso Alvo</label>
+            <select id="select-course" onchange="onUnivOrCourseChange()" class="w-full bg-slate-100 dark:bg-slate-950 border border-slate-300 dark:border-slate-700 rounded-xl px-3 py-2 text-xs text-slate-900 dark:text-slate-200 focus:border-emerald-500 focus:outline-none">
               <!-- Populated dynamically -->
             </select>
           </div>
         </div>
 
-        <!-- Nota de Corte Estimada & Mês de Início -->
+        <!-- Nota de Corte & Mês de Início -->
         <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <div class="space-y-1">
-            <label class="block text-xs font-semibold text-slate-300">Nota de Corte Ampla Concorrência</label>
-            <input type="number" step="0.1" id="input-cutoff" placeholder="Ex: 745.5" required class="w-full bg-slate-950 border border-slate-700 rounded-xl px-3 py-2 text-xs text-slate-200 focus:border-emerald-500 focus:outline-none">
-            <span class="text-[10px] text-slate-500">Auto-preenchida com base no curso selecionado. Pode personalizar!</span>
+            <label class="block text-xs font-semibold text-slate-700 dark:text-slate-300">Nota de Corte Ampla Concorrência</label>
+            <input type="number" step="0.1" id="input-cutoff" placeholder="Ex: 745.5" required class="w-full bg-slate-100 dark:bg-slate-950 border border-slate-300 dark:border-slate-700 rounded-xl px-3 py-2 text-xs text-slate-900 dark:text-slate-200 focus:border-emerald-500 focus:outline-none">
+            <span class="text-[10px] text-slate-500">Nota estimada configurável.</span>
           </div>
 
           <div class="space-y-1">
-            <label class="block text-xs font-semibold text-slate-300">Mês que vai Começar a Estudar</label>
-            <select id="select-start-month" class="w-full bg-slate-950 border border-slate-700 rounded-xl px-3 py-2 text-xs text-slate-200 focus:border-emerald-500 focus:outline-none">
+            <label class="block text-xs font-semibold text-slate-700 dark:text-slate-300">Mês de Início nos Estudos</label>
+            <select id="select-start-month" class="w-full bg-slate-100 dark:bg-slate-950 border border-slate-300 dark:border-slate-700 rounded-xl px-3 py-2 text-xs text-slate-900 dark:text-slate-200 focus:border-emerald-500 focus:outline-none">
               <option value="0">Janeiro (44 semanas)</option>
               <option value="1">Fevereiro (40 semanas)</option>
               <option value="2">Março (36 semanas)</option>
@@ -603,21 +646,22 @@
               <option value="5">Junho (24 semanas)</option>
               <option value="6">Julho (20 semanas)</option>
               <option value="7">Agosto (16 semanas)</option>
+              <option value="8">Setembro (12 semanas)</option>
             </select>
           </div>
         </div>
 
         <!-- Preview dos Pesos Oficiais da Universidade -->
-        <div class="bg-slate-950 p-4 rounded-xl border border-slate-800 space-y-2">
-          <span class="text-xs font-bold text-slate-300 block">Pesos SISU Automáticos para o Curso Selecionado:</span>
+        <div class="bg-slate-100 dark:bg-slate-950 p-4 rounded-xl border border-slate-200 dark:border-slate-800 space-y-2">
+          <span class="text-xs font-bold text-slate-700 dark:text-slate-300 block">Pesos SISU para o Curso Selecionado:</span>
           <div id="modal-weights-preview" class="grid grid-cols-5 gap-2 text-center text-xs">
             <!-- Dynamic Preview -->
           </div>
         </div>
 
         <div class="flex items-center justify-end space-x-3 pt-2">
-          <button type="button" onclick="closeProfileModal()" class="px-4 py-2 text-xs text-slate-400 hover:text-slate-200 font-semibold">Cancelar</button>
-          <button type="submit" class="px-6 py-2.5 bg-gradient-to-r from-emerald-500 to-emerald-600 hover:from-emerald-600 text-slate-950 font-bold text-xs rounded-xl shadow transition">
+          <button type="button" onclick="closeProfileModal()" class="px-4 py-2 text-xs text-slate-500 hover:text-slate-700 dark:hover:text-slate-200 font-semibold">Cancelar</button>
+          <button type="submit" class="px-6 py-2.5 bg-gradient-to-r from-emerald-500 to-emerald-600 hover:from-emerald-600 text-white dark:text-slate-950 font-bold text-xs rounded-xl shadow transition">
             Salvar e Atualizar Plataforma
           </button>
         </div>
@@ -628,14 +672,160 @@
   </div>
 
 
-  <!-- JAVASCRIPT APP ENGINE -->
+  <!-- MODAL: SUPABASE AUTHENTICATION (Login / Registro) -->
+  <div id="auth-modal" class="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-sm flex items-center justify-center p-4 hidden">
+    <div class="glass-card bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 w-full max-w-md rounded-3xl p-6 sm:p-8 space-y-6 shadow-2xl relative">
+      
+      <div class="flex items-center justify-between border-b border-slate-200 dark:border-slate-800 pb-4">
+        <div>
+          <h3 class="text-xl font-bold text-slate-900 dark:text-white flex items-center space-x-2">
+            <i class="fa-solid fa-cloud text-cyan-500"></i>
+            <span>Sincronização na Nuvem</span>
+          </h3>
+          <p class="text-xs text-slate-500 dark:text-slate-400">Entre com seu Usuário e Senha para salvar seus dados.</p>
+        </div>
+        <button onclick="closeAuthModal()" class="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 text-lg p-2">
+          <i class="fa-solid fa-xmark"></i>
+        </button>
+      </div>
+
+      <!-- Auth Form -->
+      <form id="auth-form" onsubmit="handleAuthSubmit(event)" class="space-y-4">
+        <div>
+          <label class="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">Nome de Usuário</label>
+          <div class="relative">
+            <span class="absolute inset-y-0 left-0 pl-3 flex items-center text-slate-400 text-xs">@</span>
+            <input type="text" id="auth-username" required placeholder="ex: lucas_enem" class="w-full bg-slate-100 dark:bg-slate-950 border border-slate-300 dark:border-slate-700 rounded-xl pl-8 pr-3 py-2 text-xs text-slate-900 dark:text-slate-200 focus:border-emerald-500 focus:outline-none">
+          </div>
+        </div>
+
+        <div>
+          <label class="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">Senha</label>
+          <input type="password" id="auth-password" required minlength="6" placeholder="Mínimo 6 caracteres" class="w-full bg-slate-100 dark:bg-slate-950 border border-slate-300 dark:border-slate-700 rounded-xl px-3 py-2 text-xs text-slate-900 dark:text-slate-200 focus:border-emerald-500 focus:outline-none">
+        </div>
+
+        <div class="flex items-center justify-between text-xs pt-1">
+          <label class="flex items-center space-x-2 cursor-pointer">
+            <input type="checkbox" id="auth-mode-toggle" class="rounded border-slate-400 text-emerald-500 focus:ring-emerald-500">
+            <span class="text-slate-600 dark:text-slate-400">Criar uma Nova Conta</span>
+          </label>
+        </div>
+
+        <button type="submit" id="auth-submit-btn" class="w-full py-2.5 bg-emerald-500 hover:bg-emerald-600 text-white dark:text-slate-950 font-bold text-xs rounded-xl shadow transition">
+          Entrar na Conta
+        </button>
+      </form>
+
+      <div id="auth-logged-in-view" class="hidden space-y-4 text-center">
+        <p class="text-xs text-slate-600 dark:text-slate-300">Você está conectado como <strong id="logged-user-display" class="text-emerald-500">---</strong></p>
+        <button onclick="handleLogout()" class="w-full py-2 bg-red-500/10 hover:bg-red-500/20 text-red-500 border border-red-500/30 font-bold text-xs rounded-xl transition">
+          Desconectar da Nuvem (Voltar ao Modo Convidado)
+        </button>
+      </div>
+
+    </div>
+  </div>
+
+
+  <!-- MODAL: REGISTER TOPIC QUESTIONS -->
+  <div id="questions-modal" class="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-sm flex items-center justify-center p-4 hidden">
+    <div class="glass-card bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 w-full max-w-sm rounded-3xl p-6 space-y-4 shadow-2xl">
+      
+      <div class="flex items-center justify-between border-b border-slate-200 dark:border-slate-800 pb-3">
+        <h4 class="font-bold text-sm text-slate-900 dark:text-white" id="qmodal-title">Registrar Questões</h4>
+        <button onclick="closeQuestionsModal()" class="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200">
+          <i class="fa-solid fa-xmark"></i>
+        </button>
+      </div>
+
+      <div class="space-y-3">
+        <div>
+          <label class="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">Questões Resolvidas</label>
+          <input type="number" id="qmodal-done" min="0" placeholder="0" class="w-full bg-slate-100 dark:bg-slate-950 border border-slate-300 dark:border-slate-700 rounded-xl px-3 py-2 text-xs text-slate-900 dark:text-slate-200 focus:border-emerald-500 focus:outline-none">
+        </div>
+
+        <div>
+          <label class="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">Acertos</label>
+          <input type="number" id="qmodal-correct" min="0" placeholder="0" class="w-full bg-slate-100 dark:bg-slate-950 border border-slate-300 dark:border-slate-700 rounded-xl px-3 py-2 text-xs text-slate-900 dark:text-slate-200 focus:border-emerald-500 focus:outline-none">
+        </div>
+      </div>
+
+      <div class="flex items-center justify-end space-x-2 pt-2">
+        <button onclick="closeQuestionsModal()" class="px-3 py-1.5 text-xs text-slate-500 hover:text-slate-700 dark:hover:text-slate-200 font-medium">Cancelar</button>
+        <button onclick="saveQuestionModal()" class="px-4 py-2 bg-emerald-500 hover:bg-emerald-600 text-white dark:text-slate-950 font-bold text-xs rounded-xl shadow transition">Salvar Questões</button>
+      </div>
+
+    </div>
+  </div>
+
+
+  <!-- MODAL: CONFIRMATION PROMPT -->
+  <div id="confirm-modal" class="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-sm flex items-center justify-center p-4 hidden">
+    <div class="glass-card bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 w-full max-w-sm rounded-3xl p-6 space-y-4 shadow-2xl text-center">
+      <i class="fa-solid fa-triangle-exclamation text-amber-500 text-3xl"></i>
+      <h4 id="confirm-modal-msg" class="font-semibold text-xs text-slate-800 dark:text-slate-200">Tem certeza que deseja executar esta ação?</h4>
+      <div class="flex items-center justify-center space-x-3 pt-2">
+        <button id="confirm-btn-cancel" class="px-4 py-2 bg-slate-200 dark:bg-slate-800 text-slate-700 dark:text-slate-300 text-xs font-semibold rounded-xl">Cancelar</button>
+        <button id="confirm-btn-ok" class="px-4 py-2 bg-red-500 text-white text-xs font-bold rounded-xl shadow">Confirmar</button>
+      </div>
+    </div>
+  </div>
+
+
+  <!-- JAVASCRIPT APPLICATION ENGINE -->
   <script>
     /* ==========================================================================
-       1. UNIVERSITIES & SISU DATABASE (Weights: MAT, HUM, LIN, NAT, RED)
+       1. SUPABASE CLIENT CONFIGURATION
+       ==========================================================================
+       Substitua as constantes abaixo pelas credenciais do seu projeto Supabase!
+       ========================================================================== 
+       
+       --- SCRIPT SQL PARA CRIAR A TABELA E POLÍTICAS RLS NO SUPABASE ---
+       Execute o código SQL abaixo no Editor SQL do console Supabase:
+
+       CREATE TABLE IF NOT EXISTS public.perfis_estudo (
+         user_id UUID PRIMARY KEY REFERENCES auth.users(id) ON DELETE CASCADE,
+         username TEXT UNIQUE NOT NULL,
+         dados_json JSONB NOT NULL DEFAULT '{}'::jsonb,
+         updated_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL
+       );
+
+       ALTER TABLE public.perfis_estudo ENABLE ROW LEVEL SECURITY;
+
+       CREATE POLICY "Permitir Leitura do Próprio Perfil" ON public.perfis_estudo 
+         FOR SELECT USING (auth.uid() = user_id);
+
+       CREATE POLICY "Permitir Inserção do Próprio Perfil" ON public.perfis_estudo 
+         FOR INSERT WITH CHECK (auth.uid() = user_id);
+
+       CREATE POLICY "Permitir Atualização do Próprio Perfil" ON public.perfis_estudo 
+         FOR UPDATE USING (auth.uid() = user_id);
+    */
+
+    const SUPABASE_URL = 'https://wfijnxtekfblwrztdvld.supabase.co';
+    const SUPABASE_ANON_KEY = 'sb_publishable_YE6YQtyG5o7jkWF7HFpCmg_pzHBRqD3';
+
+    let supabaseClient = null;
+    let currentUser = null;
+
+    // Inicialização do Supabase se as chaves forem fornecidas
+    if (SUPABASE_URL !== 'COLE_SUA_SUPABASE_URL_AQUI' && SUPABASE_ANON_KEY !== 'COLE_SUA_SUPABASE_ANON_KEY_AQUI') {
+      try {
+        if (window.supabase && typeof window.supabase.createClient === 'function') {
+          supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+        }
+      } catch (err) {
+        console.warn("Erro ao instanciar Supabase Client:", err);
+      }
+    }
+
+
+    /* ==========================================================================
+       2. UNIVERSITIES & SISU DATABASE (Weights: MAT, HUM, LIN, NAT, RED)
        ========================================================================== */
     const UNIVERSITIES_DB = {
       "UFES": {
-        name: "UFES - Universidade Federal do Espírito Santo",
+        name: "UFES - Univ. Federal do Espírito Santo",
         short: "UFES",
         courses: {
           "Ciências Econômicas": { cutoff: 745.5, weights: { MAT: 4, HUM: 4, RED: 4, LIN: 2, NAT: 1 } },
@@ -649,7 +839,7 @@
         }
       },
       "USP": {
-        name: "USP - Universidade de São Paulo (Enem-USP)",
+        name: "USP - Universidade de São Paulo",
         short: "USP",
         courses: {
           "Medicina": { cutoff: 826.5, weights: { MAT: 3, HUM: 2, RED: 3, LIN: 2, NAT: 4 } },
@@ -660,7 +850,7 @@
         }
       },
       "UFRJ": {
-        name: "UFRJ - Universidade Federal do Rio de Janeiro",
+        name: "UFRJ - Univ. Federal do Rio de Janeiro",
         short: "UFRJ",
         courses: {
           "Medicina": { cutoff: 818.0, weights: { MAT: 3, HUM: 2, RED: 3, LIN: 2, NAT: 4 } },
@@ -670,7 +860,7 @@
         }
       },
       "UFMG": {
-        name: "UFMG - Universidade Federal de Minas Gerais",
+        name: "UFMG - Univ. Federal de Minas Gerais",
         short: "UFMG",
         courses: {
           "Medicina": { cutoff: 812.4, weights: { MAT: 1, HUM: 1, RED: 1, LIN: 1, NAT: 1 } },
@@ -689,7 +879,7 @@
         }
       },
       "UNICAMP": {
-        name: "UNICAMP - Universidade Estadual de Campinas",
+        name: "UNICAMP - Univ. Estadual de Campinas",
         short: "UNICAMP",
         courses: {
           "Medicina": { cutoff: 822.0, weights: { MAT: 3, HUM: 2, RED: 3, LIN: 2, NAT: 4 } },
@@ -697,7 +887,7 @@
         }
       },
       "UFBA": {
-        name: "UFBA - Universidade Federal da Bahia",
+        name: "UFBA - Univ. Federal da Bahia",
         short: "UFBA",
         courses: {
           "Medicina": { cutoff: 802.0, weights: { MAT: 3, HUM: 2, RED: 3, LIN: 2, NAT: 4 } },
@@ -705,7 +895,7 @@
         }
       },
       "UFPR": {
-        name: "UFPR - Universidade Federal do Paraná",
+        name: "UFPR - Univ. Federal do Paraná",
         short: "UFPR",
         courses: {
           "Medicina": { cutoff: 806.0, weights: { MAT: 3, HUM: 2, RED: 3, LIN: 2, NAT: 4 } },
@@ -713,7 +903,7 @@
         }
       },
       "UFRGS": {
-        name: "UFRGS - Universidade Federal do Rio Grande do Sul",
+        name: "UFRGS - Univ. Federal do Rio Grande do Sul",
         short: "UFRGS",
         courses: {
           "Medicina": { cutoff: 809.0, weights: { MAT: 3, HUM: 2, RED: 3, LIN: 2, NAT: 4 } },
@@ -721,7 +911,7 @@
         }
       },
       "OUTRA": {
-        name: "Outra Universidade Pública (Personalizado)",
+        name: "Outra Universidade (Personalizado)",
         short: "Personalizado",
         courses: {
           "Geral / Personalizado": { cutoff: 750.0, weights: { MAT: 1, HUM: 1, RED: 1, LIN: 1, NAT: 1 } }
@@ -729,8 +919,9 @@
       }
     };
 
+
     /* ==========================================================================
-       2. MASTER SYLLABUS TOPICS (High-Yield ENEM Topics)
+       3. MASTER SYLLABUS TOPICS
        ========================================================================== */
     const MASTER_TOPICS = [
       // MATEMÁTICA
@@ -760,7 +951,7 @@
       // NATUREZA
       { id: "n1", area: "Ciências da Natureza", title: "Ecologia, Cadeias Alimentares e Impactos Ambientais", channel: "Plataforma Assaad", query: "Plataforma Assaad Ecologia Biologia ENEM" },
       { id: "n2", area: "Ciências da Natureza", title: "Genética, Biotecnologia e Citologia", channel: "Plataforma Assaad", query: "Plataforma Assaad Genetica Citologia ENEM" },
-      { id: "n3", area: "Ciências da Natureza", title: "Química Geral: Stoichiometria e Soluções", channel: "Plataforma Assaad", query: "Plataforma Assaad Estequiometria Quimica ENEM" },
+      { id: "n3", area: "Ciências da Natureza", title: "Química Geral: Estequiometria e Soluções", channel: "Plataforma Assaad", query: "Plataforma Assaad Estequiometria Quimica ENEM" },
       { id: "n4", area: "Ciências da Natureza", title: "Química Orgânica e Termoquímica", channel: "Plataforma Assaad", query: "Plataforma Assaad Quimica Organica ENEM" },
       { id: "n5", area: "Ciências da Natureza", title: "Física: Mecânica, Cinemática e Leis de Newton", channel: "Plataforma Assaad", query: "Plataforma Assaad Fisica Mecanica ENEM" },
       { id: "n6", area: "Ciências da Natureza", title: "Física: Eletricidade, Circuitos e Ondulatória", channel: "Plataforma Assaad", query: "Plataforma Assaad Eletrodinamica Ondulatoria ENEM" },
@@ -771,51 +962,80 @@
       { id: "r3", area: "Redação", title: "Proposta de Intervenção Detalhada (Competência 5)", channel: "Luma e Ponto", query: "Luma e Ponto Proposta de Intervenção ENEM" }
     ];
 
-    const MONTH_NAMES = ["Janeiro", "Fevereiro", "Março", "Abril", "Maio", "Junho", "Julho", "Agosto"];
+    const MONTH_NAMES = ["Janeiro", "Fevereiro", "Março", "Abril", "Maio", "Junho", "Julho", "Agosto", "Setembro"];
 
     /* ==========================================================================
-       3. APPLICATION STATE
+       4. APPLICATION STATE
        ========================================================================== */
     let appState = {
+      theme: 'dark',
       profile: {
         name: "Estudante ENEM",
         photo: null,
         universityKey: "UFES",
         courseKey: "Ciências Econômicas",
         cutoffScore: 745.5,
-        startMonth: 0 // 0 = Jan, 1 = Feb...
+        startMonth: 0 // 0 = Jan, 1 = Feb, etc.
       },
       completedTopics: {},
       topicQuestions: {}, // topicId -> { done: 0, correct: 0 }
       simulados: []
     };
 
+    let activeTopicForModal = null;
     let chartInstance = null;
 
+
     /* ==========================================================================
-       4. INITIALIZATION & STORAGE
+       5. INITIALIZATION & STATE MANAGEMENT
        ========================================================================== */
     window.onload = function() {
-      loadState();
+      loadStateLocal();
+      initTheme();
       populateUniversityDropdown();
       populateCourseDropdown();
-      updateUI();
       initChart();
-
-      // Check onboarding
-      if (!localStorage.getItem('enem2027_initialized')) {
-        openProfileModal();
-        localStorage.setItem('enem2027_initialized', 'true');
-      }
+      updateUI();
+      checkSupabaseSession();
     };
 
-    function loadState() {
+    function initTheme() {
+      if (appState.theme === 'light') {
+        document.documentElement.classList.remove('dark');
+        document.documentElement.classList.add('light');
+        document.getElementById('theme-toggle-icon').className = "fa-solid fa-moon text-slate-700";
+      } else {
+        document.documentElement.classList.remove('light');
+        document.documentElement.classList.add('dark');
+        document.getElementById('theme-toggle-icon').className = "fa-solid fa-sun text-amber-400";
+      }
+    }
+
+    function toggleTheme() {
+      if (document.documentElement.classList.contains('dark')) {
+        document.documentElement.classList.remove('dark');
+        document.documentElement.classList.add('light');
+        appState.theme = 'light';
+        document.getElementById('theme-toggle-icon').className = "fa-solid fa-moon text-slate-700";
+        showToast("Modo Claro ativado!");
+      } else {
+        document.documentElement.classList.remove('light');
+        document.documentElement.classList.add('dark');
+        appState.theme = 'dark';
+        document.getElementById('theme-toggle-icon').className = "fa-solid fa-sun text-amber-400";
+        showToast("Modo Escuro ativado!");
+      }
+      saveState();
+      updateChartTheme();
+    }
+
+    function loadStateLocal() {
       const saved = localStorage.getItem('enem2027_app_state');
       if (saved) {
         try {
           appState = JSON.parse(saved);
         } catch(e) {
-          console.error("Erro ao carregar estado salvo", e);
+          console.error("Erro ao ler LocalStorage:", e);
         }
       }
     }
@@ -823,10 +1043,111 @@
     function saveState() {
       localStorage.setItem('enem2027_app_state', JSON.stringify(appState));
       updateUI();
+      syncStateToCloud();
     }
 
+    async function syncStateToCloud() {
+      if (!supabaseClient || !currentUser) return;
+      
+      updateCloudStatusBadge('syncing');
+      try {
+        const { error } = await supabaseClient
+          .from('perfis_estudo')
+          .upsert({
+            user_id: currentUser.id,
+            username: currentUser.username,
+            dados_json: appState,
+            updated_at: new Date().toISOString()
+          });
+
+        if (error) throw error;
+        updateCloudStatusBadge('synced');
+      } catch (err) {
+        console.error("Erro ao sincronizar com Supabase:", err);
+        updateCloudStatusBadge('error');
+      }
+    }
+
+    async function checkSupabaseSession() {
+      if (!supabaseClient) {
+        updateCloudStatusBadge('local');
+        return;
+      }
+
+      try {
+        const { data: { session } } = await supabaseClient.auth.getSession();
+        if (session && session.user) {
+          currentUser = {
+            id: session.user.id,
+            username: session.user.email ? session.user.email.split('@')[0] : 'usuario'
+          };
+          updateCloudStatusBadge('synced');
+          await loadStateFromCloud();
+        } else {
+          updateCloudStatusBadge('local');
+        }
+      } catch (err) {
+        console.warn("Sessão Supabase indisponível:", err);
+        updateCloudStatusBadge('local');
+      }
+    }
+
+    async function loadStateFromCloud() {
+      if (!supabaseClient || !currentUser) return;
+      try {
+        const { data, error } = await supabaseClient
+          .from('perfis_estudo')
+          .select('dados_json')
+          .eq('user_id', currentUser.id)
+          .single();
+
+        if (data && data.dados_json && Object.keys(data.dados_json).length > 0) {
+          appState = data.dados_json;
+          localStorage.setItem('enem2027_app_state', JSON.stringify(appState));
+          initTheme();
+          updateUI();
+          showToast("Dados sincronizados da nuvem com sucesso!");
+        }
+      } catch (err) {
+        console.warn("Perfil nuvem não encontrado ou novo usuário:", err);
+      }
+    }
+
+    function updateCloudStatusBadge(status) {
+      const badge = document.getElementById('cloud-sync-badge');
+      const icon = document.getElementById('cloud-sync-icon');
+      const text = document.getElementById('cloud-sync-text');
+
+      if (status === 'synced') {
+        badge.className = "px-3 py-1.5 rounded-xl text-xs font-medium flex items-center space-x-2 bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20 cursor-pointer";
+        icon.className = "fa-solid fa-cloud-check text-emerald-500";
+        text.textContent = `Nuvem Ok (@${currentUser?.username || 'usuario'})`;
+      } else if (status === 'syncing') {
+        badge.className = "px-3 py-1.5 rounded-xl text-xs font-medium flex items-center space-x-2 bg-cyan-500/10 text-cyan-600 dark:text-cyan-400 border border-cyan-500/20 cursor-pointer";
+        icon.className = "fa-solid fa-rotate fa-spin text-cyan-500";
+        text.textContent = "Sincronizando...";
+      } else if (status === 'error') {
+        badge.className = "px-3 py-1.5 rounded-xl text-xs font-medium flex items-center space-x-2 bg-red-500/10 text-red-600 dark:text-red-400 border border-red-500/20 cursor-pointer";
+        icon.className = "fa-solid fa-cloud-exclamation text-red-500";
+        text.textContent = "Erro na Nuvem";
+      } else { // local
+        badge.className = "px-3 py-1.5 rounded-xl text-xs font-medium flex items-center space-x-2 bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/20 cursor-pointer";
+        icon.className = "fa-solid fa-hard-drive text-amber-500";
+        text.textContent = "Modo Convidado (Local)";
+      }
+
+      // Update Auth Button
+      const authBtnText = document.getElementById('auth-btn-text');
+      if (currentUser) {
+        authBtnText.textContent = "Minha Conta";
+      } else {
+        authBtnText.textContent = "Entrar / Cadastrar";
+      }
+    }
+
+
     /* ==========================================================================
-       5. PROFILE & MODAL LOGIC
+       6. PROFILE & SISU TARGET MODAL LOGIC
        ========================================================================== */
     function openProfileModal() {
       document.getElementById('profile-modal').classList.remove('hidden');
@@ -889,11 +1210,11 @@
 
       const container = document.getElementById('modal-weights-preview');
       container.innerHTML = `
-        <div class="bg-slate-900 p-2 rounded border border-slate-800"><span class="block text-slate-500 text-[10px]">MAT</span><strong class="text-emerald-400">${weights.MAT}</strong></div>
-        <div class="bg-slate-900 p-2 rounded border border-slate-800"><span class="block text-slate-500 text-[10px]">HUM</span><strong class="text-amber-400">${weights.HUM}</strong></div>
-        <div class="bg-slate-900 p-2 rounded border border-slate-800"><span class="block text-slate-500 text-[10px]">LIN</span><strong class="text-cyan-400">${weights.LIN}</strong></div>
-        <div class="bg-slate-900 p-2 rounded border border-slate-800"><span class="block text-slate-500 text-[10px]">NAT</span><strong class="text-purple-400">${weights.NAT}</strong></div>
-        <div class="bg-slate-900 p-2 rounded border border-slate-800"><span class="block text-slate-500 text-[10px]">RED</span><strong class="text-pink-400">${weights.RED}</strong></div>
+        <div class="bg-slate-200 dark:bg-slate-900 p-2 rounded border border-slate-300 dark:border-slate-800"><span class="block text-slate-500 text-[10px]">MAT</span><strong class="text-emerald-500">${weights.MAT}</strong></div>
+        <div class="bg-slate-200 dark:bg-slate-900 p-2 rounded border border-slate-300 dark:border-slate-800"><span class="block text-slate-500 text-[10px]">HUM</span><strong class="text-amber-500">${weights.HUM}</strong></div>
+        <div class="bg-slate-200 dark:bg-slate-900 p-2 rounded border border-slate-300 dark:border-slate-800"><span class="block text-slate-500 text-[10px]">LIN</span><strong class="text-cyan-500">${weights.LIN}</strong></div>
+        <div class="bg-slate-200 dark:bg-slate-900 p-2 rounded border border-slate-300 dark:border-slate-800"><span class="block text-slate-500 text-[10px]">NAT</span><strong class="text-purple-500">${weights.NAT}</strong></div>
+        <div class="bg-slate-200 dark:bg-slate-900 p-2 rounded border border-slate-300 dark:border-slate-800"><span class="block text-slate-500 text-[10px]">RED</span><strong class="text-pink-500">${weights.RED}</strong></div>
       `;
     }
 
@@ -933,11 +1254,99 @@
 
       saveState();
       closeProfileModal();
+      showToast("Perfil e metas atualizados com sucesso!");
     }
 
 
     /* ==========================================================================
-       6. UI UPDATER & COMPUTATIONS
+       7. SUPABASE AUTH & LOGIN LOGIC
+       ========================================================================== */
+    function openAuthModal() {
+      document.getElementById('auth-modal').classList.remove('hidden');
+      const form = document.getElementById('auth-form');
+      const loggedView = document.getElementById('auth-logged-in-view');
+
+      if (currentUser) {
+        form.classList.add('hidden');
+        loggedView.classList.remove('hidden');
+        document.getElementById('logged-user-display').textContent = `@${currentUser.username}`;
+      } else {
+        form.classList.remove('hidden');
+        loggedView.classList.add('hidden');
+      }
+    }
+
+    function closeAuthModal() {
+      document.getElementById('auth-modal').classList.add('hidden');
+    }
+
+    async function handleAuthSubmit(e) {
+      e.preventDefault();
+      if (!supabaseClient) {
+        showToast("Supabase não configurado. Adicione suas chaves no topo do script HTML.", "warning");
+        return;
+      }
+
+      const username = document.getElementById('auth-username').value.trim().toLowerCase();
+      const password = document.getElementById('auth-password').value;
+      const isRegister = document.getElementById('auth-mode-toggle').checked;
+      const dummyEmail = `${username}@enem2027.app`;
+
+      const btn = document.getElementById('auth-submit-btn');
+      btn.disabled = true;
+      btn.textContent = "Processando...";
+
+      try {
+        if (isRegister) {
+          // Registro
+          const { data, error } = await supabaseClient.auth.signUp({
+            email: dummyEmail,
+            password: password,
+            options: { data: { username: username } }
+          });
+          if (error) throw error;
+          
+          if (data.user) {
+            currentUser = { id: data.user.id, username: username };
+            showToast(`Conta @${username} criada e conectada!`);
+            await syncStateToCloud();
+          }
+        } else {
+          // Login
+          const { data, error } = await supabaseClient.auth.signInWithPassword({
+            email: dummyEmail,
+            password: password
+          });
+          if (error) throw error;
+
+          if (data.user) {
+            currentUser = { id: data.user.id, username: username };
+            showToast(`Bem-vindo(a) de volta, @${username}!`);
+            await loadStateFromCloud();
+          }
+        }
+        closeAuthModal();
+      } catch (err) {
+        showToast(err.message || "Erro de autenticação.", "error");
+      } finally {
+        btn.disabled = false;
+        btn.textContent = isRegister ? "Criar Conta" : "Entrar na Conta";
+      }
+    }
+
+    async function handleLogout() {
+      if (supabaseClient) {
+        await supabaseClient.auth.signOut();
+      }
+      currentUser = null;
+      updateCloudStatusBadge('local');
+      closeAuthModal();
+      showToast("Você desconectou da nuvem. Agora está no modo Convidado.");
+    }
+
+
+    /* ==========================================================================
+       8. MAIN UI RENDER & COMPUTATIONS
        ========================================================================== */
     function getCurrentWeights() {
       const uKey = appState.profile.universityKey;
@@ -1011,22 +1420,18 @@
         const diff = (lastScore - prof.cutoffScore).toFixed(1);
         const gapEl = document.getElementById('kpi-sim-gap');
         if (diff >= 0) {
-          gapEl.innerHTML = `Diferença p/ Corte: <strong class="text-emerald-400">+${diff} pts (Aprovado!)</strong>`;
+          gapEl.innerHTML = `Diferença p/ Corte: <strong class="text-emerald-500">+${diff} pts (Aprovado!)</strong>`;
         } else {
-          gapEl.innerHTML = `Diferença p/ Corte: <strong class="text-amber-400">${diff} pts</strong>`;
+          gapEl.innerHTML = `Diferença p/ Corte: <strong class="text-amber-500">${diff} pts</strong>`;
         }
       } else {
         document.getElementById('kpi-last-sim-score').textContent = "---";
         document.getElementById('kpi-sim-gap').innerHTML = `Diferença p/ Corte: <strong class="text-slate-400">Nenhum simulado</strong>`;
       }
 
-      // Render Dynamic Weights Bar
       renderWeightsBar();
-      // Render Schedule
       renderSchedule();
-      // Render Simulados Table
       renderSimuladosTable();
-      // Update Chart
       updateChart();
     }
 
@@ -1036,11 +1441,11 @@
       document.getElementById('weights-univ-label').textContent = appState.profile.universityKey;
 
       const items = [
-        { key: 'MAT', name: 'Matemática', val: weights.MAT, color: 'from-emerald-500 to-emerald-400', txt: 'text-emerald-400' },
-        { key: 'HUM', name: 'Humanas', val: weights.HUM, color: 'from-amber-500 to-amber-400', txt: 'text-amber-400' },
-        { key: 'LIN', name: 'Linguagens', val: weights.LIN, color: 'from-cyan-500 to-cyan-400', txt: 'text-cyan-400' },
-        { key: 'NAT', name: 'Natureza', val: weights.NAT, color: 'from-purple-500 to-purple-400', txt: 'text-purple-400' },
-        { key: 'RED', name: 'Redação', val: weights.RED, color: 'from-pink-500 to-pink-400', txt: 'text-pink-400' }
+        { key: 'MAT', name: 'Matemática', val: weights.MAT, color: 'from-emerald-500 to-emerald-400', txt: 'text-emerald-500' },
+        { key: 'HUM', name: 'Humanas', val: weights.HUM, color: 'from-amber-500 to-amber-400', txt: 'text-amber-500' },
+        { key: 'LIN', name: 'Linguagens', val: weights.LIN, color: 'from-cyan-500 to-cyan-400', txt: 'text-cyan-500' },
+        { key: 'NAT', name: 'Natureza', val: weights.NAT, color: 'from-purple-500 to-purple-400', txt: 'text-purple-500' },
+        { key: 'RED', name: 'Redação', val: weights.RED, color: 'from-pink-500 to-pink-400', txt: 'text-pink-500' }
       ];
 
       const maxWeight = Math.max(...Object.values(weights));
@@ -1048,10 +1453,10 @@
       container.innerHTML = items.map(it => `
         <div class="space-y-1">
           <div class="flex justify-between text-xs">
-            <span class="text-slate-300 font-medium">${it.name}</span>
+            <span class="text-slate-700 dark:text-slate-300 font-medium">${it.name}</span>
             <span class="${it.txt} font-bold">Peso ${it.val}</span>
           </div>
-          <div class="w-full bg-slate-950 h-2 rounded-full overflow-hidden border border-slate-800">
+          <div class="w-full bg-slate-200 dark:bg-slate-950 h-2 rounded-full overflow-hidden border border-slate-300 dark:border-slate-800">
             <div class="bg-gradient-to-r ${it.color} h-full rounded-full" style="width: ${(it.val / maxWeight) * 100}%"></div>
           </div>
         </div>
@@ -1059,7 +1464,7 @@
     }
 
     /* ==========================================================================
-       7. DYNAMIC SCHEDULE GENERATOR
+       9. DYNAMIC SCHEDULE GENERATOR
        ========================================================================== */
     function renderSchedule() {
       const startMonthIndex = appState.profile.startMonth;
@@ -1072,15 +1477,12 @@
       const container = document.getElementById('schedule-container');
       container.innerHTML = '';
 
-      // Filter topics if needed
       let topics = MASTER_TOPICS;
       if (selectedArea !== 'all') {
         topics = MASTER_TOPICS.filter(t => t.area === selectedArea);
       }
 
-      // Group topics into active weeks
-      const topicsPerWeek = Math.ceil(topics.length / (activeWeeksCount / 2)); // Distribute into blocks
-
+      const topicsPerWeek = Math.ceil(topics.length / (activeWeeksCount / 2));
       let currentTopicIndex = 0;
       let weekNum = 1;
 
@@ -1091,20 +1493,20 @@
         const isCurrentWeek = weekNum === 1;
 
         const weekCard = document.createElement('div');
-        weekCard.className = `glass-card rounded-2xl p-5 space-y-4 border ${isCurrentWeek ? 'border-emerald-500/40 bg-slate-900/90' : 'border-slate-800'}`;
+        weekCard.className = `glass-card rounded-2xl p-5 space-y-4 border ${isCurrentWeek ? 'border-emerald-500/40 bg-slate-100/80 dark:bg-slate-900/90' : 'border-slate-200 dark:border-slate-800'}`;
 
         weekCard.innerHTML = `
-          <div class="flex flex-wrap items-center justify-between border-b border-slate-800 pb-3 gap-2">
+          <div class="flex flex-wrap items-center justify-between border-b border-slate-200 dark:border-slate-800 pb-3 gap-2">
             <div class="flex items-center space-x-3">
-              <span class="w-8 h-8 rounded-xl ${isCurrentWeek ? 'bg-emerald-500 text-slate-950 font-black' : 'bg-slate-800 text-slate-300'} flex items-center justify-center font-bold text-xs">
+              <span class="w-8 h-8 rounded-xl ${isCurrentWeek ? 'bg-emerald-500 text-white dark:text-slate-950 font-black' : 'bg-slate-200 dark:bg-slate-800 text-slate-700 dark:text-slate-300'} flex items-center justify-center font-bold text-xs">
                 S${weekNum}
               </span>
               <div>
-                <h4 class="font-bold text-slate-100 text-sm">Semana ${weekNum} do Cronograma</h4>
-                <p class="text-[11px] text-slate-400">Meta recomendada: 80 questões + 1 simulação quinzenal</p>
+                <h4 class="font-bold text-slate-900 dark:text-slate-100 text-sm">Semana ${weekNum} do Cronograma</h4>
+                <p class="text-[11px] text-slate-500 dark:text-slate-400">Meta recomendada: 80 questões + 1 simulação quinzenal</p>
               </div>
             </div>
-            ${isCurrentWeek ? '<span class="text-[10px] bg-emerald-500/10 text-emerald-400 font-bold px-2 py-0.5 rounded border border-emerald-500/30 uppercase">Semana Atual</span>' : ''}
+            ${isCurrentWeek ? '<span class="text-[10px] bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 font-bold px-2 py-0.5 rounded border border-emerald-500/30 uppercase">Semana Atual</span>' : ''}
           </div>
 
           <div class="space-y-3">
@@ -1123,26 +1525,26 @@
       const ytUrl = `https://www.youtube.com/results?search_query=${encodeURIComponent(topic.query)}`;
 
       return `
-        <div class="p-3 bg-slate-950/60 rounded-xl border border-slate-800/80 flex flex-col md:flex-row md:items-center justify-between gap-3 hover:border-slate-700 transition">
+        <div class="p-3 bg-white/70 dark:bg-slate-950/60 rounded-xl border border-slate-200 dark:border-slate-800/80 flex flex-col md:flex-row md:items-center justify-between gap-3 hover:border-slate-300 dark:hover:border-slate-700 transition">
           <div class="flex items-start space-x-3">
-            <input type="checkbox" onchange="toggleTopic('${topic.id}', this.checked)" ${isChecked ? 'checked' : ''} class="mt-1 w-4 h-4 rounded border-slate-700 text-emerald-500 focus:ring-emerald-500 bg-slate-900 cursor-pointer">
+            <input type="checkbox" onchange="toggleTopic('${topic.id}', this.checked)" ${isChecked ? 'checked' : ''} class="mt-1 w-4 h-4 rounded border-slate-300 dark:border-slate-700 text-emerald-500 focus:ring-emerald-500 cursor-pointer">
             <div>
-              <span class="text-[10px] font-semibold text-emerald-400 uppercase tracking-wider">${topic.area}</span>
-              <h5 class="font-semibold text-xs ${isChecked ? 'line-through text-slate-500' : 'text-slate-200'}">${topic.title}</h5>
-              <p class="text-[11px] text-slate-400 mt-0.5">Professor Recomendado: <strong class="text-slate-300">${topic.channel}</strong></p>
+              <span class="text-[10px] font-semibold text-emerald-600 dark:text-emerald-400 uppercase tracking-wider">${topic.area}</span>
+              <h5 class="font-semibold text-xs ${isChecked ? 'line-through text-slate-400 dark:text-slate-500' : 'text-slate-800 dark:text-slate-200'}">${topic.title}</h5>
+              <p class="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5">Professor Recomendado: <strong class="text-slate-700 dark:text-slate-300">${topic.channel}</strong></p>
             </div>
           </div>
 
           <div class="flex items-center space-x-2 self-end md:self-center">
             <!-- Botão Aula Youtube -->
-            <a href="${ytUrl}" target="_blank" class="px-2.5 py-1.5 bg-red-500/10 hover:bg-red-500/20 text-red-400 rounded-lg text-[11px] font-semibold flex items-center space-x-1 border border-red-500/20 transition">
+            <a href="${ytUrl}" target="_blank" class="px-2.5 py-1.5 bg-red-500/10 hover:bg-red-500/20 text-red-500 rounded-lg text-[11px] font-semibold flex items-center space-x-1 border border-red-500/20 transition">
               <i class="fa-brands fa-youtube"></i>
-              <span>Assistir Aula</span>
+              <span>Aula YouTube</span>
             </a>
 
             <!-- Contador de Questões -->
-            <button onclick="openQuestionModal('${topic.id}', '${topic.title.replace(/'/g, "\\'")}')" class="px-2.5 py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-200 rounded-lg text-[11px] font-semibold flex items-center space-x-1 border border-slate-700 transition">
-              <i class="fa-solid fa-pen-to-square text-cyan-400"></i>
+            <button onclick="openQuestionsModal('${topic.id}', '${topic.title.replace(/'/g, "\\'")}')" class="px-2.5 py-1.5 bg-slate-200 dark:bg-slate-800 hover:bg-slate-300 dark:hover:bg-slate-700 text-slate-800 dark:text-slate-200 rounded-lg text-[11px] font-semibold flex items-center space-x-1 border border-slate-300 dark:border-slate-700 transition">
+              <i class="fa-solid fa-pen-to-square text-cyan-500"></i>
               <span>Q: ${qStats.done} (${qStats.correct}v)</span>
             </button>
           </div>
@@ -1155,25 +1557,39 @@
       saveState();
     }
 
-    function openQuestionModal(id, title) {
+    function openQuestionsModal(id, title) {
+      activeTopicForModal = id;
       const qStats = appState.topicQuestions[id] || { done: 0, correct: 0 };
-      const done = prompt(`Quantas questões você fez para o tópico:\n"${title}"?`, qStats.done);
-      if (done === null) return;
-      
-      const correct = prompt(`Dessas ${done} questões, quantas você acertou?`, qStats.correct);
-      if (correct === null) return;
+      document.getElementById('qmodal-title').textContent = title;
+      document.getElementById('qmodal-done').value = qStats.done || '';
+      document.getElementById('qmodal-correct').value = qStats.correct || '';
+      document.getElementById('questions-modal').classList.remove('hidden');
+    }
 
-      appState.topicQuestions[id] = {
-        done: Math.max(0, parseInt(done) || 0),
-        correct: Math.max(0, parseInt(correct) || 0)
-      };
+    function closeQuestionsModal() {
+      document.getElementById('questions-modal').classList.add('hidden');
+      activeTopicForModal = null;
+    }
 
+    function saveQuestionModal() {
+      if (!activeTopicForModal) return;
+      const done = parseInt(document.getElementById('qmodal-done').value) || 0;
+      const correct = parseInt(document.getElementById('qmodal-correct').value) || 0;
+
+      if (correct > done) {
+        showToast("O número de acertos não pode ser maior que o de questões resolvidas!", "warning");
+        return;
+      }
+
+      appState.topicQuestions[activeTopicForModal] = { done, correct };
       saveState();
+      closeQuestionsModal();
+      showToast("Registro de questões salvo!");
     }
 
 
     /* ==========================================================================
-       8. SIMULADOS LOGIC & CHART.JS
+       10. SIMULADOS LOGIC & CHART.JS
        ========================================================================== */
     function saveSimulado(e) {
       e.preventDefault();
@@ -1195,18 +1611,19 @@
         totalWeighted
       });
 
-      // Ordenar por data
       appState.simulados.sort((a,b) => new Date(a.date) - new Date(b.date));
 
       saveState();
       document.getElementById('simulado-form').reset();
+      showToast("Simulado registrado com sucesso!");
     }
 
     function deleteSimulado(id) {
-      if (confirm("Deseja remover este simulado do histórico?")) {
+      openConfirmModal("Deseja remover este simulado do seu histórico?", () => {
         appState.simulados = appState.simulados.filter(s => s.id !== id);
         saveState();
-      }
+        showToast("Simulado removido!");
+      });
     }
 
     function renderSimuladosTable() {
@@ -1214,23 +1631,23 @@
       body.innerHTML = '';
 
       if (appState.simulados.length === 0) {
-        body.innerHTML = `<tr><td colspan="8" class="p-4 text-center text-slate-500 italic">Nenhum simulado cadastrado ainda. Use o formulário ao lado.</td></tr>`;
+        body.innerHTML = `<tr><td colspan="8" class="p-4 text-center text-slate-400 italic">Nenhum simulado cadastrado ainda. Use o formulário ao lado.</td></tr>`;
         return;
       }
 
       appState.simulados.forEach(s => {
         const tr = document.createElement('tr');
-        tr.className = "hover:bg-slate-900/50 transition";
+        tr.className = "hover:bg-slate-100/50 dark:hover:bg-slate-900/50 transition";
         tr.innerHTML = `
-          <td class="p-3 font-medium text-slate-200">${s.date}</td>
-          <td class="p-3 text-emerald-400 font-semibold">${s.mat}</td>
-          <td class="p-3 text-amber-400 font-semibold">${s.hum}</td>
-          <td class="p-3 text-cyan-400 font-semibold">${s.lin}</td>
-          <td class="p-3 text-purple-400 font-semibold">${s.nat}</td>
-          <td class="p-3 text-pink-400 font-semibold">${s.red}</td>
-          <td class="p-3 font-extrabold text-white bg-slate-900/80 rounded-lg">${s.totalWeighted.toFixed(1)}</td>
+          <td class="p-3 font-medium text-slate-800 dark:text-slate-200">${s.date}</td>
+          <td class="p-3 text-emerald-600 dark:text-emerald-400 font-semibold">${s.mat}</td>
+          <td class="p-3 text-amber-600 dark:text-amber-400 font-semibold">${s.hum}</td>
+          <td class="p-3 text-cyan-600 dark:text-cyan-400 font-semibold">${s.lin}</td>
+          <td class="p-3 text-purple-600 dark:text-purple-400 font-semibold">${s.nat}</td>
+          <td class="p-3 text-pink-600 dark:text-pink-400 font-semibold">${s.red}</td>
+          <td class="p-3 font-extrabold text-slate-900 dark:text-white bg-slate-200 dark:bg-slate-900/80 rounded-lg">${s.totalWeighted.toFixed(1)}</td>
           <td class="p-3 text-right">
-            <button onclick="deleteSimulado(${s.id})" class="text-slate-500 hover:text-red-400 p-1">
+            <button onclick="deleteSimulado(${s.id})" class="text-slate-400 hover:text-red-500 p-1">
               <i class="fa-solid fa-trash"></i>
             </button>
           </td>
@@ -1241,6 +1658,10 @@
 
     function initChart() {
       const ctx = document.getElementById('evolutionChart').getContext('2d');
+      const isDark = document.documentElement.classList.contains('dark');
+      const textColor = isDark ? '#94a3b8' : '#475569';
+      const gridColor = isDark ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.05)';
+
       chartInstance = new Chart(ctx, {
         type: 'line',
         data: {
@@ -1269,11 +1690,11 @@
           responsive: true,
           maintainAspectRatio: false,
           plugins: {
-            legend: { labels: { color: '#94a3b8', font: { family: 'Inter', size: 11 } } }
+            legend: { labels: { color: textColor, font: { family: 'Inter', size: 11 } } }
           },
           scales: {
-            x: { ticks: { color: '#64748b', font: { size: 10 } }, grid: { color: 'rgba(255,255,255,0.05)' } },
-            y: { min: 400, max: 1000, ticks: { color: '#64748b', font: { size: 10 } }, grid: { color: 'rgba(255,255,255,0.05)' } }
+            x: { ticks: { color: textColor, font: { size: 10 } }, grid: { color: gridColor } },
+            y: { min: 400, max: 1000, ticks: { color: textColor, font: { size: 10 } }, grid: { color: gridColor } }
           }
         }
       });
@@ -1292,21 +1713,81 @@
       chartInstance.update();
     }
 
+    function updateChartTheme() {
+      if (!chartInstance) return;
+      const isDark = document.documentElement.classList.contains('dark');
+      const textColor = isDark ? '#94a3b8' : '#475569';
+      const gridColor = isDark ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.05)';
+
+      chartInstance.options.plugins.legend.labels.color = textColor;
+      chartInstance.options.scales.x.ticks.color = textColor;
+      chartInstance.options.scales.x.grid.color = gridColor;
+      chartInstance.options.scales.y.ticks.color = textColor;
+      chartInstance.options.scales.y.grid.color = gridColor;
+      chartInstance.update();
+    }
+
 
     /* ==========================================================================
-       9. TAB SWITCHER & BACKUP LOGIC
+       11. HELPERS & UI TOASTS / CONFIRM MODALS
        ========================================================================== */
     function switchTab(tabId) {
       document.querySelectorAll('.tab-content').forEach(el => el.classList.add('hidden'));
       document.querySelectorAll('.tab-btn').forEach(btn => {
-        btn.classList.remove('active', 'bg-emerald-500/10', 'text-emerald-400', 'border', 'border-emerald-500/30');
-        btn.classList.add('text-slate-400');
+        btn.classList.remove('active', 'bg-emerald-500/10', 'text-emerald-600', 'dark:text-emerald-400', 'border', 'border-emerald-500/30');
+        btn.classList.add('text-slate-600', 'dark:text-slate-400');
       });
 
       document.getElementById(`tab-${tabId}`).classList.remove('hidden');
       const activeBtn = document.getElementById(`tab-btn-${tabId}`);
-      activeBtn.classList.add('active', 'bg-emerald-500/10', 'text-emerald-400', 'border', 'border-emerald-500/30');
-      activeBtn.classList.remove('text-slate-400');
+      activeBtn.classList.add('active', 'bg-emerald-500/10', 'text-emerald-600', 'dark:text-emerald-400', 'border', 'border-emerald-500/30');
+      activeBtn.classList.remove('text-slate-600', 'dark:text-slate-400');
+    }
+
+    function showToast(message, type = 'success') {
+      const container = document.getElementById('toast-container');
+      const toast = document.createElement('div');
+      
+      let borderClass = 'border-emerald-500 text-emerald-600 dark:text-emerald-400';
+      let icon = 'fa-circle-check';
+      if (type === 'warning') {
+        borderClass = 'border-amber-500 text-amber-600 dark:text-amber-400';
+        icon = 'fa-triangle-exclamation';
+      } else if (type === 'error') {
+        borderClass = 'border-red-500 text-red-600 dark:text-red-400';
+        icon = 'fa-circle-xmark';
+      }
+
+      toast.className = `glass-card bg-white dark:bg-slate-900 border-l-4 ${borderClass} px-4 py-3 rounded-xl shadow-xl flex items-center space-x-3 pointer-events-auto fade-in text-xs font-semibold text-slate-800 dark:text-slate-200`;
+      toast.innerHTML = `<i class="fa-solid ${icon} text-sm"></i><span>${message}</span>`;
+
+      container.appendChild(toast);
+      setTimeout(() => {
+        toast.style.opacity = '0';
+        toast.style.transition = 'opacity 0.3s ease';
+        setTimeout(() => toast.remove(), 300);
+      }, 3500);
+    }
+
+    function openConfirmModal(message, onConfirm) {
+      document.getElementById('confirm-modal-msg').textContent = message;
+      const modal = document.getElementById('confirm-modal');
+      const okBtn = document.getElementById('confirm-btn-ok');
+      const cancelBtn = document.getElementById('confirm-btn-cancel');
+
+      modal.classList.remove('hidden');
+
+      const cleanup = () => {
+        modal.classList.add('hidden');
+        okBtn.onclick = null;
+        cancelBtn.onclick = null;
+      };
+
+      okBtn.onclick = () => {
+        onConfirm();
+        cleanup();
+      };
+      cancelBtn.onclick = cleanup;
     }
 
     function exportBackup() {
@@ -1317,6 +1798,7 @@
       document.body.appendChild(downloadAnchor);
       downloadAnchor.click();
       downloadAnchor.remove();
+      showToast("Backup JSON exportado com sucesso!");
     }
 
     function importBackup(e) {
@@ -1329,17 +1811,42 @@
           const imported = JSON.parse(evt.target.result);
           if (imported && imported.profile) {
             appState = imported;
+            initTheme();
             saveState();
-            alert("Backup restaurado com sucesso!");
+            showToast("Backup restaurado com sucesso!");
           } else {
-            alert("Arquivo de backup inválido.");
+            showToast("Arquivo de backup inválido.", "error");
           }
         } catch(err) {
-          alert("Erro ao ler arquivo de backup.");
+          showToast("Erro ao processar arquivo JSON.", "error");
         }
       };
       reader.readAsText(file);
     }
+
+    // Expor explicitamente as funções interativas no escopo global window
+    Object.assign(window, {
+      toggleTheme,
+      openProfileModal,
+      closeProfileModal,
+      onUnivOrCourseChange,
+      handlePhotoUpload,
+      saveProfile,
+      openAuthModal,
+      closeAuthModal,
+      handleAuthSubmit,
+      handleLogout,
+      switchTab,
+      renderSchedule,
+      toggleTopic,
+      openQuestionsModal,
+      closeQuestionsModal,
+      saveQuestionModal,
+      saveSimulado,
+      deleteSimulado,
+      exportBackup,
+      importBackup
+    });
   </script>
 </body>
 </html>
